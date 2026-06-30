@@ -1,0 +1,54 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+# any nested .next build output (e.g. stray local build dirs), not just the root one
+**/.next/
+
+# stray local build artifact (old manual zip-deploy experiment, not source) — feel free to delete
+/tt/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+*.tsbuildinfo
+
+# debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files — never commit real secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.deploy
+
+# deploy artefact
+deploy.zip
+/deploy/
+
+# user-uploaded content (approval images) — not part of the build
+/public/uploads/
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Claude Code: personal/local-only permission grants, not shared project config
+.claude/settings.local.json
+
+# NOTE: assets/ contains the full ICE brand kit (~7GB). It is intentionally NOT
+# committed by default. Uncomment the next line if you keep it out of version control.
+# /assets

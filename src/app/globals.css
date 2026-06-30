@@ -1,0 +1,514 @@
+/* ============================================================
+   ICE Pulse — global styles
+   Brand tokens, fonts and themes ported from the ICE design
+   system (ice-intelligence-hub reference). Self-hosted fonts.
+   ============================================================ */
+
+/* ── Fonts (self-hosted from the ICE brand kit) ───────────── */
+@font-face {
+  font-family: 'Albra';
+  src: url('/fonts/Albra-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Albra';
+  src: url('/fonts/Albra-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Albra';
+  src: url('/fonts/Albra-Semi.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Albra';
+  src: url('/fonts/Albra-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Albra';
+  src: url('/fonts/Albra-Black.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Brand palette + Dark theme (default) ─────────────────── */
+:root {
+  --gold: #ffd500;
+  --teal: #00d9d0;
+  --cerise: #ff86ef;
+  --violet: #c79dfe;
+  --green: #22d3a0;
+  --orange: #ff9d4d;
+  --red: #ff5b6a;
+  --red-subtle: rgba(255, 91, 106, 0.12);
+
+  --radius: 12px;
+  --sidebar-w: 248px;
+  --topbar-h: 64px;
+
+  --font-albra: 'Albra', Georgia, serif;
+  --font-poppins: 'Poppins', system-ui, sans-serif;
+
+  /* Light is the default theme. Calm is the only alternate (see below). */
+  --bg: #f5f4fa;
+  --bg-secondary: #ffffff;
+  --surface: #f4f1fb;
+  --surface-hover: #ece7f7;
+  --border: rgba(20, 8, 42, 0.08);
+  --border-strong: rgba(20, 8, 42, 0.16);
+  --text-primary: #14082a;
+  --text-secondary: #5a4d6e;
+  --text-muted: #8b7fb0;
+
+  --sidebar-bg: #ffffff;
+  --sidebar-border: rgba(20, 8, 42, 0.08);
+  --sidebar-text: #5a4d6e;
+  --nav-hover-bg: rgba(20, 8, 42, 0.05);
+  --nav-hover-text: #14082a;
+  --nav-active-bg: #ffd500;
+  --nav-active-text: #14082a;
+  --nav-badge-bg: rgba(20, 8, 42, 0.08);
+  --nav-badge-text: #14082a;
+
+  --topbar-bg: #ffffff;
+  --topbar-border: rgba(20, 8, 42, 0.08);
+  --topbar-text: #14082a;
+  --topbar-muted: #8b7fb0;
+  --search-bg: rgba(20, 8, 42, 0.04);
+  --search-border: rgba(20, 8, 42, 0.1);
+  --search-text: #14082a;
+  --search-placeholder: #8b7fb0;
+  --icon-btn-bg: rgba(20, 8, 42, 0.05);
+  --icon-btn-text: #5a4d6e;
+  --icon-btn-hover-bg: rgba(20, 8, 42, 0.09);
+  --org-bg: rgba(20, 8, 42, 0.04);
+  --org-border: rgba(20, 8, 42, 0.1);
+  --org-text: #14082a;
+
+  --card-bg: #ffffff;
+  --card-border: rgba(20, 8, 42, 0.08);
+  --kpi-card-bg: #ffffff;
+  --kpi-card-text: #14082a;
+  --kpi-label-color: #7c6b9a;
+
+  --section-heading: #14082a;
+  --section-subtext: #5a4d6e;
+
+  --status-live-bg: rgba(34, 211, 160, 0.16);
+  --status-live-text: #0d9268;
+  --status-paused-bg: rgba(255, 157, 77, 0.18);
+  --status-paused-text: #c2410c;
+  --status-removed-bg: rgba(255, 91, 106, 0.15);
+  --status-removed-text: #e11d48;
+  --status-neutral-bg: rgba(20, 8, 42, 0.06);
+  --status-neutral-text: #5a4d6e;
+
+  --chart-grid: rgba(20, 8, 42, 0.07);
+  --ai-bg: linear-gradient(135deg, #f1ebfb 0%, #eaf7f6 100%);
+  --ai-border: rgba(199, 157, 254, 0.4);
+  --shadow-card: 0 1px 2px rgba(20, 8, 42, 0.04), 0 6px 20px rgba(20, 8, 42, 0.05);
+}
+
+/* Light tokens live in :root above. Calm is the only alternate theme. */
+[data-theme='calm'] {
+  --bg: #f5f4f9;
+  --bg-secondary: #ffffff;
+  --surface: #ffffff;
+  --surface-hover: #f0ebf8;
+  --border: rgba(199, 157, 254, 0.22);
+  --border-strong: rgba(199, 157, 254, 0.4);
+  --text-primary: #14082a;
+  --text-secondary: #5a4d6e;
+  --text-muted: #8b7fb0;
+
+  --sidebar-bg: #ffffff;
+  --sidebar-border: rgba(199, 157, 254, 0.18);
+  --sidebar-text: #5a4d6e;
+  --nav-hover-bg: rgba(199, 157, 254, 0.1);
+  --nav-hover-text: #14082a;
+  --nav-active-bg: rgba(199, 157, 254, 0.25);
+  --nav-active-text: #14082a;
+  --nav-badge-bg: rgba(199, 157, 254, 0.15);
+  --nav-badge-text: #14082a;
+
+  --topbar-bg: #ffffff;
+  --topbar-border: rgba(199, 157, 254, 0.22);
+  --topbar-text: #14082a;
+  --topbar-muted: #8b7fb0;
+  --search-bg: rgba(199, 157, 254, 0.08);
+  --search-border: rgba(199, 157, 254, 0.25);
+  --search-text: #14082a;
+  --search-placeholder: #8b7fb0;
+  --icon-btn-bg: rgba(199, 157, 254, 0.1);
+  --icon-btn-text: #5a4d6e;
+  --icon-btn-hover-bg: rgba(199, 157, 254, 0.2);
+  --org-bg: rgba(199, 157, 254, 0.1);
+  --org-border: rgba(199, 157, 254, 0.25);
+  --org-text: #14082a;
+
+  --card-bg: #ffffff;
+  --card-border: rgba(199, 157, 254, 0.2);
+  --kpi-card-bg: #ffffff;
+  --kpi-card-text: #14082a;
+  --kpi-label-color: #7c6b9a;
+
+  --section-heading: #14082a;
+  --section-subtext: #5a4d6e;
+
+  --status-neutral-bg: rgba(199, 157, 254, 0.12);
+  --status-neutral-text: #5a4d6e;
+
+  --chart-grid: rgba(199, 157, 254, 0.18);
+  --ai-bg: linear-gradient(135deg, #ede8f8, #e4dbf2);
+  --ai-border: rgba(199, 157, 254, 0.4);
+  --shadow-card: 0 1px 4px rgba(199, 157, 254, 0.18);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    background: var(--bg);
+  }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--font-poppins);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: rgba(255, 213, 0, 0.3);
+  }
+}
+
+/* ICE component classes — plain CSS (outside @layer) so Tailwind never purges
+   them, including dynamically-composed names like `kpi-accent-${accent}`. */
+.ice-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .ice-scroll::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 8px;
+  }
+  .ice-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Status pill */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 999px;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+  .status-live {
+    background: var(--status-live-bg);
+    color: var(--status-live-text);
+  }
+  .status-paused {
+    background: var(--status-paused-bg);
+    color: var(--status-paused-text);
+  }
+  .status-removed {
+    background: var(--status-removed-bg);
+    color: var(--status-removed-text);
+  }
+  .status-neutral {
+    background: var(--status-neutral-bg);
+    color: var(--status-neutral-text);
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+    border-radius: 8px;
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(20, 8, 42, 0.05), transparent);
+    animation: shimmer 1.4s infinite;
+  }
+
+  /* Sidebar nav items */
+  .ice-nav-item {
+    color: var(--sidebar-text);
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .ice-nav-item:hover {
+    background: var(--nav-hover-bg);
+    color: var(--nav-hover-text);
+  }
+  .ice-nav-item-active,
+  .ice-nav-item-active:hover {
+    background: var(--nav-active-bg);
+    color: var(--nav-active-text);
+    font-weight: 600;
+  }
+
+  /* Icon buttons (topbar) */
+  .ice-icon-btn {
+    display: inline-flex;
+    height: 36px;
+    width: 36px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 16px;
+    background: var(--icon-btn-bg);
+    color: var(--icon-btn-text);
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .ice-icon-btn:hover {
+    background: var(--icon-btn-hover-bg);
+    color: var(--topbar-text);
+  }
+
+  /* Pill buttons */
+  .ice-pill-btn-gold {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 7px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--gold);
+    color: #14082a;
+    transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+  }
+  .ice-pill-btn-gold:hover {
+    background: #ffe033;
+    transform: translateY(-1px);
+  }
+  .ice-pill-btn-gold:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .ice-pill-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 7px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text-secondary);
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .ice-pill-btn-ghost:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+  }
+  .ice-pill-btn-ghost:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  /* Search input */
+  .ice-search {
+    width: 100%;
+    border-radius: 999px;
+    padding: 8px 16px 8px 38px;
+    font-size: 13px;
+    background: var(--search-bg);
+    border: 1px solid var(--search-border);
+    color: var(--search-text);
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .ice-search::placeholder {
+    color: var(--search-placeholder);
+  }
+  .ice-search:focus {
+    border-color: rgba(255, 213, 0, 0.4);
+  }
+
+  /* Cards */
+  .ice-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+  }
+  .ice-card-interactive {
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+  .ice-card-interactive:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 213, 0, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .ice-section-title {
+    font-family: var(--font-albra);
+    font-weight: 800;
+    color: var(--section-heading);
+  }
+
+  /* Data tables */
+  .ice-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .ice-table th {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--card-border);
+    white-space: nowrap;
+  }
+  .ice-table td {
+    padding: 12px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--card-border);
+  }
+  .ice-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .ice-table tbody tr:hover td {
+    background: var(--surface-hover);
+  }
+  .ice-table td.ice-table-strong {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  /* KPI card top accents */
+  .kpi-accent-gold {
+    border-top: 3px solid var(--gold);
+  }
+  .kpi-accent-teal {
+    border-top: 3px solid var(--teal);
+  }
+  .kpi-accent-violet {
+    border-top: 3px solid var(--violet);
+  }
+  .kpi-accent-cerise {
+    border-top: 3px solid var(--cerise);
+  }
+  .kpi-accent-green {
+    border-top: 3px solid var(--green);
+  }
+  .kpi-accent-orange {
+    border-top: 3px solid var(--orange);
+  }
+
+  /* Action chips */
+  .ice-action-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 7px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    color: var(--text-secondary);
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+  .ice-action-chip:hover {
+    background: rgba(255, 213, 0, 0.1);
+    border-color: rgba(255, 213, 0, 0.3);
+    color: var(--text-primary);
+  }
+
+/* Keyframes for the skeleton shimmer (referenced from raw CSS above, so it is
+   defined here rather than relying on Tailwind's animation utilities). */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Print: drop the app chrome so a client report prints clean. */
+@media print {
+  aside,
+  header,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body {
+    background: #fff;
+  }
+  .report-doc {
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
