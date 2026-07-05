@@ -16,6 +16,7 @@ import { TableSkeleton } from '@/components/ui/Skeleton';
 import { DateRangePicker } from '@/components/controls/DateRangePicker';
 import { CampaignTable } from './CampaignTable';
 import { CampaignDetailDrawer } from './CampaignDetailDrawer';
+import { CampaignCompare } from './CampaignCompare';
 
 const SELECT_STYLE: React.CSSProperties = {
   background: 'var(--search-bg)',
@@ -114,6 +115,9 @@ export function CampaignsView() {
         title="Google Ads Performance"
         subtitle="Filter, sort and drill into campaign performance from your latest sync."
       >
+        {data && data.campaigns.length >= 2 && (
+          <CampaignCompare campaigns={data.campaigns} from={from} to={to} />
+        )}
         <DateRangePicker />
       </PageHeader>
 

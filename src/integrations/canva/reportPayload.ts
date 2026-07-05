@@ -1,5 +1,5 @@
 import { getDashboardOverview } from '@/server/services/dashboard.service';
-import { getSignals } from '@/server/services/signals.service';
+import { getSmartSignals } from '@/server/services/signals.service';
 import { getGoogleAdsAccountName } from '@/server/db/repositories/platformAccounts.repo';
 import type { CanvaReportPayload } from '@/lib/types';
 
@@ -14,7 +14,7 @@ export async function buildCanvaReportPayload(
 ): Promise<CanvaReportPayload> {
   const [overview, signalsDto, account] = await Promise.all([
     getDashboardOverview(from, to),
-    getSignals(from, to).catch(() => null),
+    getSmartSignals(from, to).catch(() => null),
     getGoogleAdsAccountName().catch(() => null),
   ]);
 

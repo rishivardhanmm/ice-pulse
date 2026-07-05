@@ -30,6 +30,7 @@ export default withAuth(
 );
 
 export const config = {
-  // Protect everything except login and NextAuth API routes
-  matcher: ['/((?!login|api/auth|_next/static|_next/image|favicon.ico|brand).*)'],
+  // Protect everything except login, NextAuth routes, and the public health probe
+  // (the login page reads /api/health to tell "DB down" apart from a bad password).
+  matcher: ['/((?!login|api/auth|api/health|_next/static|_next/image|favicon.ico|brand).*)'],
 };

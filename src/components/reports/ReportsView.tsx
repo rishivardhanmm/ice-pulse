@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { generateClientReport } from '@/lib/api-client';
 import { defaultRange, todayUtc } from '@/lib/date';
 import {
@@ -119,6 +119,36 @@ function ReportDoc({ report }: { report: AiReportDTO }) {
   );
 }
 
+interface ClientOption {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface CampaignOption {
+  id: number;
+  campaignName: string | null;
+  clientId: number | null;
+  /** Google and Meta campaign ids are separate sequences and CAN collide numerically. */
+  channel: 'google' | 'meta';
+}
+
+/** Composite key so a Google id and a Meta id that happen to be numerically equal never collide in selection state. */
+function campaignKey(c: CampaignOption): string {
+  return `${c.channel}:${c.id}`;
+}
+
+const SELECT_STYLE: React.CSSProperties = {
+  background: 'var(--search-bg)',
+  border: '1px solid var(--search-border)',
+  color: 'var(--search-text)',
+  borderRadius: 8,
+  padding: '7px 10px',
+  fontSize: 12,
+  outline: 'none',
+  maxWidth: 220,
+};
+
 export function ReportsView() {
   const { configured } = useAiStatus();
   const def = defaultRange(90);
@@ -128,11 +158,47 @@ export function ReportsView() {
   const [report, setReport] = useState<AiReportDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignOption[]>([]);
+  const [clientId, setClientId] = useState<number | null>(null);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  useEffect(() => {
+    void fetch('/api/admin/clients')
+      .then((r) => r.json())
+      .then((data: ClientOption[]) =>
+        setClients(Array.isArray(data) ? data.filter((c) => c.slug !== 'ice-internal') : []),
+      )
+      .catch(() => setClients([]));
+    void fetch('/api/admin/campaigns')
+      .then((r) => r.json())
+      .then((data: CampaignOption[]) => setCampaigns(Array.isArray(data) ? data : []))
+      .catch(() => setCampaigns([]));
+  }, []);
+
+  const visibleCampaigns = clientId ? campaigns.filter((c) => c.clientId === clientId) : campaigns;
+
+  const selectedCampaignIds = campaigns
+    .filter((c) => c.channel === 'google' && selectedKeys.has(campaignKey(c)))
+    .map((c) => c.id);
+  const selectedMetaCampaignIds = campaigns
+    .filter((c) => c.channel === 'meta' && selectedKeys.has(campaignKey(c)))
+    .map((c) => c.id);
+
   const run = async () => {
     setLoading(true);
     setError(null);
     try {
-      setReport(await generateClientReport({ from, to }));
+      setReport(
+        await generateClientReport({
+          from,
+          to,
+          clientId: selectedKeys.size > 0 ? null : clientId,
+          campaignIds: selectedCampaignIds,
+          metaCampaignIds: selectedMetaCampaignIds,
+        }),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to generate the report.');
     } finally {
@@ -142,12 +208,114 @@ export function ReportsView() {
 
   return (
     <>
-      <PageHeader title="Client Reports" subtitle="Generate a client-ready performance report from your live data.">
+      <PageHeader
+        title="Client Reports"
+        subtitle="Generate a client-ready performance report — for the whole account, one client, or hand-picked campaigns."
+      >
         <div className="no-print flex flex-wrap items-center gap-2">
           <DateInput value={from} max={to} onChange={setFrom} label="From date" />
           <span style={{ color: 'var(--text-muted)' }}>→</span>
           <DateInput value={to} min={from} max={todayUtc()} onChange={setTo} label="To date" />
-          <button onClick={run} disabled={loading || !configured} className="ice-pill-btn-gold" type="button">
+
+          <select
+            value={clientId ?? ''}
+            onChange={(e) => {
+              setClientId(e.target.value ? Number(e.target.value) : null);
+              setSelectedKeys(new Set());
+            }}
+            style={SELECT_STYLE}
+            aria-label="Report scope: client"
+          >
+            <option value="">Whole account</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setPickerOpen((o) => !o)}
+              className="ice-pill-btn-ghost"
+              aria-label="Pick specific campaigns"
+            >
+              <i className="bi bi-megaphone" aria-hidden="true" />
+              {selectedKeys.size > 0 ? `${selectedKeys.size} campaign${selectedKeys.size !== 1 ? 's' : ''}` : 'Campaigns'}
+            </button>
+            {pickerOpen && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setPickerOpen(false)} />
+                <div
+                  className="absolute right-0 top-full z-40 mt-2 w-72 rounded-2xl border p-3 shadow-xl"
+                  style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
+                >
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                    Report on specific campaigns
+                  </p>
+                  {visibleCampaigns.length === 0 ? (
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                      No campaigns available.
+                    </p>
+                  ) : (
+                    <div className="max-h-56 space-y-1 overflow-y-auto">
+                      {visibleCampaigns.map((c) => {
+                        const key = campaignKey(c);
+                        const checked = selectedKeys.has(key);
+                        return (
+                          <label
+                            key={key}
+                            className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors"
+                            style={{ background: checked ? 'var(--surface)' : 'transparent' }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() =>
+                                setSelectedKeys((prev) => {
+                                  const next = new Set(prev);
+                                  if (checked) next.delete(key);
+                                  else next.add(key);
+                                  return next;
+                                })
+                              }
+                              style={{ accentColor: 'var(--gold)' }}
+                            />
+                            <i
+                              className={`bi ${c.channel === 'meta' ? 'bi-meta' : 'bi-google'} shrink-0`}
+                              style={{ color: c.channel === 'meta' ? '#1877F2' : '#4285F4' }}
+                              title={c.channel === 'meta' ? 'Meta Ads' : 'Google Ads'}
+                            />
+                            <span className="flex-1 truncate" style={{ color: 'var(--text-primary)' }}>
+                              {c.campaignName ?? `Campaign #${c.id}`}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {selectedKeys.size > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedKeys(new Set())}
+                      className="mt-2 w-full rounded-xl border py-1.5 text-xs font-semibold"
+                      style={{ borderColor: 'var(--card-border)', color: 'var(--text-muted)' }}
+                    >
+                      Clear selection
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          <button
+            onClick={run}
+            disabled={loading || !configured}
+            className="ice-pill-btn-gold"
+            type="button"
+          >
             {loading ? (
               <>
                 <i className="bi bi-arrow-repeat animate-spin" aria-hidden="true" /> Generating…

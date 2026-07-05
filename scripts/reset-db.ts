@@ -24,6 +24,14 @@ import { logger, toErrorMessage } from '../src/server/logger';
 // Leaf tables first, parents last — must respect current FK dependency order
 // (see database/migrations/*.sql). Update this list when a migration adds a table.
 const TABLES_IN_DELETE_ORDER = [
+  'zoho_scheduled_posts',
+  'zoho_social_posts',
+  'zoho_social_profiles',
+  'zoho_social_brands',
+  'zoho_social_connections',
+  'news_keywords',
+  'news_feed_cache',
+  'calendar_events',
   'approval_events',
   'client_budget',
   'approval_submissions',

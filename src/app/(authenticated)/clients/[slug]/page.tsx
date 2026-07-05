@@ -16,7 +16,14 @@ import { KpiGrid } from '@/components/dashboard/KpiGrid';
 import { TrendChart } from '@/components/charts/TrendChart';
 import { TopCampaignsTable } from '@/components/dashboard/TopCampaignsTable';
 import { ClientBudgetGauge } from '@/components/dashboard/ClientBudgetGauge';
-import type { CampaignDTO, MetricsTotals, TrendPoint } from '@/lib/types';
+import {
+  AskPulseChips,
+  BudgetPacingCard,
+  ClientAiSummary,
+  ClientAnomalies,
+  MetricGlossary,
+} from '@/components/clients/ClientExperience';
+import type { BudgetPacingDTO, CampaignDTO, MetricsTotals, TrendPoint } from '@/lib/types';
 
 interface ClientOverviewData {
   client: { id: number; name: string; slug: string };
@@ -28,6 +35,7 @@ interface ClientOverviewData {
   campaigns: CampaignDTO[];
   campaignCount: number;
   budget: { pctUsed: number; updatedAt: string | null } | null;
+  pacing: BudgetPacingDTO | null;
 }
 
 function ClientDashboardInner({ slug }: { slug: string }) {
@@ -110,18 +118,35 @@ function ClientDashboardInner({ slug }: { slug: string }) {
                 currency={data.currency}
               />
 
-              {data.budget && (
+              {/* Plain-English AI narrative of the period */}
+              <div className="mt-6">
+                <ClientAiSummary slug={slug} from={from} to={to} />
+              </div>
+
+              {/* Budget: computed pacing when an amount/goal is set; manual gauge otherwise */}
+              {data.pacing && (data.pacing.mode === 'computed' || data.pacing.conversionGoal) ? (
                 <div className="mt-6">
-                  <Card>
-                    <h2 className="ice-section-title mb-4 text-sm">Budget Utilisation</h2>
-                    <ClientBudgetGauge
-                      pctUsed={data.budget.pctUsed}
-                      updatedAt={data.budget.updatedAt}
-                      size="lg"
-                    />
-                  </Card>
+                  <BudgetPacingCard pacing={data.pacing} currency={data.currency} />
                 </div>
+              ) : (
+                data.budget && (
+                  <div className="mt-6">
+                    <Card>
+                      <h2 className="ice-section-title mb-4 text-sm">Budget Utilisation</h2>
+                      <ClientBudgetGauge
+                        pctUsed={data.budget.pctUsed}
+                        updatedAt={data.budget.updatedAt}
+                        size="lg"
+                      />
+                    </Card>
+                  </div>
+                )
               )}
+
+              {/* Unusual movements on their campaigns, in plain English */}
+              <div className="mt-6">
+                <ClientAnomalies />
+              </div>
 
               <div className="mt-6">
                 <Card>
@@ -138,6 +163,14 @@ function ClientDashboardInner({ slug }: { slug: string }) {
                   </Card>
                 </div>
               )}
+
+              {/* Invite them to ask questions + explain the jargon */}
+              <div className="mt-6">
+                <AskPulseChips />
+              </div>
+              <div className="mt-6">
+                <MetricGlossary />
+              </div>
             </>
           )}
         </>

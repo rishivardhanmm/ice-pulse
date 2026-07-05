@@ -10,11 +10,11 @@ export function PageHeader({
   children?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="ice-section-title text-2xl leading-tight">{title}</h1>
+        <h1 className="ice-section-title text-[26px] leading-tight sm:text-[28px]">{title}</h1>
         {subtitle && (
-          <p className="mt-1 text-sm" style={{ color: 'var(--section-subtext)' }}>
+          <p className="mt-1.5 text-[13px]" style={{ color: 'var(--section-subtext)' }}>
             {subtitle}
           </p>
         )}

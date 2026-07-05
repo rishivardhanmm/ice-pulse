@@ -49,7 +49,7 @@ export function ApprovalDetail({ id }: { id: number }) {
   }
   if (!data) return null;
 
-  const { submission, events, canDecide } = data;
+  const { submission, events, reviewers, canDecide } = data;
   const isSubmitter = session?.user?.id === String(submission.submittedBy);
   const canResubmit = isSubmitter && submission.status === 'rejected';
 
@@ -114,6 +114,21 @@ export function ApprovalDetail({ id }: { id: number }) {
           <p className="mt-3 text-[11px]" style={{ color: 'var(--text-muted)' }}>
             Submitted by <strong>{submission.submittedByName}</strong> on {formatDateTime(submission.createdAt)}
           </p>
+          {reviewers.length > 0 && (
+            <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+              <i className="bi bi-person-check" aria-hidden="true" />
+              Approval requested from:
+              {reviewers.map((r) => (
+                <span
+                  key={r.userId}
+                  className="rounded-full px-2 py-0.5 font-semibold"
+                  style={{ background: 'var(--status-neutral-bg)', color: 'var(--text-secondary)' }}
+                >
+                  {r.name}
+                </span>
+              ))}
+            </p>
+          )}
         </div>
       </Card>
 

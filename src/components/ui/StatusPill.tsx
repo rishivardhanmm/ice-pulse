@@ -8,8 +8,12 @@ function titleCase(s: string): string {
 
 const CAMPAIGN: Record<string, { cls: string; label: string }> = {
   ENABLED: { cls: 'status-live', label: 'Enabled' },
+  ACTIVE: { cls: 'status-live', label: 'Active' },
   PAUSED: { cls: 'status-paused', label: 'Paused' },
   REMOVED: { cls: 'status-removed', label: 'Removed' },
+  ARCHIVED: { cls: 'status-neutral', label: 'Archived' },
+  DELETED: { cls: 'status-removed', label: 'Deleted' },
+  WITH_ISSUES: { cls: 'status-paused', label: 'With issues' },
 };
 
 export function CampaignStatusPill({ status }: { status: string | null }) {

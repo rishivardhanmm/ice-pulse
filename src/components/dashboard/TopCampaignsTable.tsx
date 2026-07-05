@@ -29,7 +29,7 @@ export function TopCampaignsTable({
         </thead>
         <tbody>
           {campaigns.map((c, i) => (
-            <tr key={c.id}>
+            <tr key={`${c.id}-${i}`}>
               <td>
                 <span className="font-display text-base font-extrabold" style={{ color: 'var(--gold)' }}>
                   {i + 1}

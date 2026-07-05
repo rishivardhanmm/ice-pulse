@@ -161,3 +161,107 @@ export async function fetchInsights(
 
   return rows;
 }
+
+// ── Pages + organic posts (Social Posts page) ─────────────────────────────────
+
+export interface MetaPage {
+  id: string;
+  name: string;
+  category?: string;
+  /** Page-scoped access token returned by /me/accounts — used for that page's posts. */
+  access_token: string;
+}
+
+/**
+ * Pages the token's user (system user) has been granted access to in
+ * Business Manager. Empty when no Page assets are assigned yet.
+ */
+export async function listPages(apiVersion: string, accessToken: string): Promise<MetaPage[]> {
+  const page = await graphGet<{ data: MetaPage[] }>(
+    apiVersion,
+    'me/accounts',
+    { fields: 'id,name,category,access_token', limit: '100' },
+    accessToken,
+  );
+  return page.data.filter((p) => p.access_token);
+}
+
+export interface MetaPagePost {
+  id: string;
+  message?: string;
+  created_time: string;
+  permalink_url?: string;
+  full_picture?: string;
+  shares?: { count: number };
+  likes?: { summary?: { total_count?: number } };
+  comments?: { summary?: { total_count?: number } };
+}
+
+/** Recent published posts for one page, with engagement counts. */
+export async function fetchPagePosts(
+  apiVersion: string,
+  pageId: string,
+  pageAccessToken: string,
+  limit = 25,
+): Promise<MetaPagePost[]> {
+  const res = await graphGet<{ data: MetaPagePost[] }>(
+    apiVersion,
+    `${pageId}/posts`,
+    {
+      fields:
+        'id,message,created_time,permalink_url,full_picture,shares,likes.summary(true),comments.summary(true)',
+      limit: String(Math.min(limit, 100)),
+    },
+    pageAccessToken,
+  );
+  return res.data;
+}
+
+// ── Campaign list ─────────────────────────────────────────────────────────────
+
+export interface MetaCampaignRow {
+  id: string;
+  name: string;
+  status?: string;
+  effective_status?: string;
+  objective?: string;
+}
+
+interface CampaignsPage {
+  data: MetaCampaignRow[];
+  paging?: { cursors?: PagingCursors; next?: string };
+}
+
+/**
+ * Fetch every campaign on the ad account (including paused/ended ones) so
+ * campaigns exist in the DB even before they have any insight rows.
+ */
+export async function fetchCampaigns(
+  apiVersion: string,
+  adAccountId: string,
+  accessToken: string,
+): Promise<MetaCampaignRow[]> {
+  const rows: MetaCampaignRow[] = [];
+  let afterCursor: string | undefined;
+
+  do {
+    const params: Record<string, string> = {
+      fields: 'id,name,status,effective_status,objective',
+      limit: '200',
+    };
+    if (afterCursor) params.after = afterCursor;
+
+    const page = await graphGet<CampaignsPage>(
+      apiVersion,
+      `${adAccountId}/campaigns`,
+      params,
+      accessToken,
+    );
+
+    rows.push(...page.data);
+    afterCursor =
+      page.paging?.next && page.paging.cursors?.after ? page.paging.cursors.after : undefined;
+  } while (afterCursor);
+
+  return rows;
+}

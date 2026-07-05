@@ -25,13 +25,20 @@ function qs(params: Record<string, string | undefined>): string {
 export function overviewUrl(
   from: string,
   to: string,
-  filters?: { clientId?: number | null; campaignIds?: number[] },
+  filters?: {
+    clientId?: number | null;
+    campaignIds?: number[];
+    metaCampaignIds?: number[];
+    channel?: string;
+  },
 ): string {
   return `/api/dashboard/overview${qs({
     from,
     to,
     clientId: filters?.clientId ? String(filters.clientId) : undefined,
     campaignIds: filters?.campaignIds?.length ? filters.campaignIds.join(',') : undefined,
+    metaCampaignIds: filters?.metaCampaignIds?.length ? filters.metaCampaignIds.join(',') : undefined,
+    channel: filters?.channel && filters.channel !== 'all' ? filters.channel : undefined,
   })}`;
 }
 
@@ -158,8 +165,22 @@ export function analyzeCampaignAi(
   return postJson<AiCampaignAnalysis>(`/api/ai/campaign/${id}`, range);
 }
 
-export function generateClientReport(range: { from: string; to: string }): Promise<AiReportDTO> {
-  return postJson<AiReportDTO>('/api/ai/report', range);
+export function generateClientReport(params: {
+  from: string;
+  to: string;
+  clientId?: number | null;
+  /** Hand-picked Google Ads campaign ids. */
+  campaignIds?: number[];
+  /** Hand-picked Meta Ads campaign ids — a SEPARATE id space from campaignIds. */
+  metaCampaignIds?: number[];
+}): Promise<AiReportDTO> {
+  return postJson<AiReportDTO>('/api/ai/report', {
+    from: params.from,
+    to: params.to,
+    ...(params.clientId ? { clientId: params.clientId } : {}),
+    ...(params.campaignIds?.length ? { campaignIds: params.campaignIds } : {}),
+    ...(params.metaCampaignIds?.length ? { metaCampaignIds: params.metaCampaignIds } : {}),
+  });
 }
 
 // ── Canva ────────────────────────────────────────────────────────────
@@ -283,12 +304,14 @@ export function submitApproval(body: {
   title?: string;
   caption?: string;
   image: File;
+  reviewerIds?: number[];
 }): Promise<{ id: number }> {
   const form = new FormData();
   if (body.clientId) form.set('clientId', String(body.clientId));
   if (body.campaignId) form.set('campaignId', String(body.campaignId));
   if (body.title) form.set('title', body.title);
   if (body.caption) form.set('caption', body.caption);
+  if (body.reviewerIds?.length) form.set('reviewerIds', body.reviewerIds.join(','));
   form.set('image', body.image);
   return postForm<{ id: number }>('/api/approvals', form);
 }
@@ -317,3 +340,114 @@ export function resubmitApproval(
 }
 
 export type { ApprovalDetailDTO, ApprovalSubmissionDTO };
+
+// ── News Insights ───────────────────────────────────────────────────────────
+export function newsKeywordsUrl(): string {
+  return '/api/news/keywords';
+}
+
+export function newsFeedUrl(force = false): string {
+  return `/api/news/feed${force ? '?force=true' : ''}`;
+}
+
+export function marketingCalendarUrl(month: string): string {
+  return `/api/news/marketing-calendar?month=${month}`;
+}
+
+export async function addNewsKeyword(
+  keyword: string,
+  clientId?: number | null,
+  isCompetitor?: boolean,
+): Promise<void> {
+  await postJson('/api/news/keywords', {
+    keyword,
+    clientId: clientId ?? null,
+    isCompetitor: isCompetitor ?? false,
+  });
+}
+
+export async function deleteNewsKeyword(id: number): Promise<void> {
+  const res = await fetch(`/api/news/keywords/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`Failed to delete keyword (${res.status})`);
+}
+
+export async function suggestNewsKeywords(): Promise<string[]> {
+  const res = await fetch('/api/news/keywords/suggest');
+  if (!res.ok) throw new Error(`Failed to suggest keywords (${res.status})`);
+  const data = (await res.json()) as { keywords: string[] };
+  return data.keywords;
+}
+
+// ── Campaign Calendar ────────────────────────────────────────────────────────
+export function calendarEventsUrl(from: string, to: string, clientId?: number | null): string {
+  return `/api/calendar/events${qs({ from, to, clientId: clientId ? String(clientId) : undefined })}`;
+}
+
+export function createCalendarEvent(body: {
+  title: string;
+  startDate: string;
+  endDate?: string | null;
+  clientId?: number | null;
+  color?: string | null;
+  notes?: string | null;
+}): Promise<{ id: number }> {
+  return postJson<{ id: number }>('/api/calendar/events', body);
+}
+
+export async function deleteCalendarEvent(id: string): Promise<void> {
+  const numId = id.replace(/^manual-/, '');
+  const res = await fetch(`/api/calendar/events/${numId}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`Failed to delete event (${res.status})`);
+}
+
+// ── Zoho Social ──────────────────────────────────────────────────────────────
+export function zohoStatusUrl(): string {
+  return '/api/zoho-social/status';
+}
+
+export function zohoPostsUrl(params?: {
+  network?: string;
+  from?: string;
+  to?: string;
+  clientId?: number | null;
+  limit?: number;
+}): string {
+  return `/api/zoho-social/posts${qs({
+    network: params?.network,
+    from: params?.from,
+    to: params?.to,
+    clientId: params?.clientId ? String(params.clientId) : undefined,
+    limit: params?.limit ? String(params.limit) : undefined,
+  })}`;
+}
+
+export function zohoProfilesUrl(): string {
+  return '/api/zoho-social/profiles';
+}
+
+export function zohoSummaryUrl(days?: number): string {
+  return `/api/zoho-social/summary${days ? `?days=${days}` : ''}`;
+}
+
+export function zohoInsightsUrl(days?: number): string {
+  return `/api/zoho-social/insights${days ? `?days=${days}` : ''}`;
+}
+
+export async function zohoDisconnect(): Promise<void> {
+  const res = await fetch('/api/zoho-social/disconnect', { method: 'POST' });
+  if (!res.ok) throw new Error(`Disconnect failed (${res.status})`);
+}
+
+export async function zohoSync(): Promise<{ status: string }> {
+  const res = await fetch('/api/zoho-social/sync', { method: 'POST' });
+  const data = (await res.json()) as { status: string };
+  return data;
+}
+
+export function generateSocialPost(body: {
+  topic: string;
+  networks?: string[];
+  tone?: string;
+}): Promise<import('./types').AiPostDraftDTO> {
+  return postJson<import('./types').AiPostDraftDTO>('/api/zoho-social/create-post', body);
+}

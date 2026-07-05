@@ -38,7 +38,7 @@ function SidebarItem({
   if (item.disabled) {
     return (
       <div
-        className="ice-nav-item mb-0.5 flex cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] opacity-50"
+        className="ice-nav-item mb-0.5 flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2 text-[13px] opacity-40"
         title="Coming in a later phase"
       >
         {inner}
@@ -50,7 +50,7 @@ function SidebarItem({
     <Link
       href={item.href}
       onClick={onNavigate}
-      className={`ice-nav-item mb-0.5 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] ${
+      className={`ice-nav-item mb-0.5 flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] ${
         active ? 'ice-nav-item-active' : ''
       }`}
     >
@@ -62,7 +62,6 @@ function SidebarItem({
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const logo = '/brand/ice-logo-indigo.svg';
 
   const user = session?.user;
   const isInternal = user?.role === 'admin' || user?.role === 'internal';
@@ -72,44 +71,38 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
   return (
     <aside
-      className={`ice-scroll fixed left-0 top-0 z-50 flex h-screen w-[248px] flex-col overflow-y-auto border-r transition-transform duration-200 lg:translate-x-0 ${
+      className={`ice-scroll fixed left-0 top-0 z-50 flex h-screen w-[264px] flex-col overflow-y-auto transition-transform duration-200 lg:translate-x-0 ${
         open ? 'translate-x-0' : '-translate-x-full'
       }`}
       style={{
         background: 'var(--sidebar-bg)',
-        borderColor: 'var(--sidebar-border)',
-        boxShadow: '1px 0 16px rgba(20,8,42,0.03)',
+        borderRight: '1px solid var(--sidebar-border)',
       }}
     >
-      <div
-        className="flex items-center gap-2 border-b px-5 py-4"
-        style={{ borderColor: 'var(--sidebar-border)' }}
-      >
+      {/* Brand */}
+      <div className="flex items-center gap-2.5 px-6 pb-5 pt-6">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={logo} alt="ICE" className="block h-6 w-auto self-center" />
-        <span
-          className="font-display text-[17px] font-extrabold leading-none"
-          style={{ color: 'var(--text-primary)' }}
-        >
+        <img src="/brand/ice-logo-white.svg" alt="ICE" className="block h-6 w-auto self-center" />
+        <span className="font-display text-[18px] font-extrabold leading-none text-white">
           Pulse
         </span>
         <span
-          className="ml-1 rounded-full px-1.5 py-0.5 text-[8px] font-bold tracking-wider"
+          className="ml-0.5 rounded-full px-1.5 py-0.5 text-[8px] font-bold tracking-wider"
           style={{ background: 'var(--gold)', color: '#14082a' }}
         >
           BETA
         </span>
       </div>
 
-      <nav className="flex-1 px-2.5 py-3">
+      <nav className="flex-1 px-3.5 pb-4">
         {/* Show full nav for internal/admin, or just clients link for client role */}
         {isInternal ? (
           <>
             {NAV_SECTIONS.map((section) => (
-              <div key={section.label} className="mb-1.5">
+              <div key={section.label} className="mb-2">
                 <p
-                  className="px-2 pb-1 pt-3 text-[9px] font-semibold uppercase tracking-[1.5px] opacity-70"
-                  style={{ color: 'var(--sidebar-text)' }}
+                  className="px-3 pb-1.5 pt-4 text-[9.5px] font-semibold uppercase tracking-[1.6px]"
+                  style={{ color: 'rgba(255,255,255,0.32)' }}
                 >
                   {section.label}
                 </p>
@@ -124,10 +117,10 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               </div>
             ))}
             {ADMIN_NAV_SECTIONS.map((section) => (
-              <div key={section.label} className="mb-1.5">
+              <div key={section.label} className="mb-2">
                 <p
-                  className="px-2 pb-1 pt-3 text-[9px] font-semibold uppercase tracking-[1.5px] opacity-70"
-                  style={{ color: 'var(--sidebar-text)' }}
+                  className="px-3 pb-1.5 pt-4 text-[9.5px] font-semibold uppercase tracking-[1.6px]"
+                  style={{ color: 'rgba(255,255,255,0.32)' }}
                 >
                   {section.label}
                 </p>
@@ -144,10 +137,10 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           </>
         ) : (
           /* Client role: show only their dashboard link */
-          <div className="mb-1.5">
+          <div className="mb-2">
             <p
-              className="px-2 pb-1 pt-3 text-[9px] font-semibold uppercase tracking-[1.5px] opacity-70"
-              style={{ color: 'var(--sidebar-text)' }}
+              className="px-3 pb-1.5 pt-4 text-[9.5px] font-semibold uppercase tracking-[1.6px]"
+              style={{ color: 'rgba(255,255,255,0.32)' }}
             >
               My Dashboard
             </p>
@@ -164,27 +157,28 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
       {/* User footer */}
       <div
-        className="border-t px-4 py-3.5"
-        style={{ borderColor: 'var(--sidebar-border)' }}
+        className="mx-3.5 mb-4 rounded-2xl p-3"
+        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}
       >
         <div className="flex items-center gap-2.5">
           <div
             className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
-            style={{ background: 'linear-gradient(135deg, var(--gold), var(--cerise))', color: '#14082a' }}
+            style={{ background: 'linear-gradient(135deg, var(--gold), var(--orange))', color: '#14082a' }}
           >
             {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[12px] font-semibold" style={{ color: 'var(--nav-hover-text)' }}>
+            <p className="truncate text-[12px] font-semibold text-white">
               {user?.name ?? 'Loading…'}
             </p>
-            <p className="truncate text-[10px]" style={{ color: 'var(--sidebar-text)' }}>
+            <p className="truncate text-[10px]" style={{ color: 'rgba(255,255,255,0.45)' }}>
               {user?.role === 'client' ? user.clientName ?? 'Client' : 'ICE Creates'}
             </p>
           </div>
           <button
             onClick={() => void signOut({ callbackUrl: '/login' })}
-            className="ice-icon-btn flex-shrink-0 text-xs"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-xs transition-colors"
+            style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.65)' }}
             title="Sign out"
             aria-label="Sign out"
           >

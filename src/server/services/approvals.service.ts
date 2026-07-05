@@ -4,23 +4,36 @@ import {
   createSubmission,
   getSubmissionById,
   listEventsForSubmission,
+  listReviewers,
   listSubmissions,
   resetToPending,
   setDecision,
+  setReviewers,
   type ApprovalSubmissionRow,
   type ApprovalEventRow,
   type ApprovalStatus,
+  type ReviewerRow,
 } from '../db/repositories/approvals.repo';
 import { listApprovers } from '../db/repositories/users.repo';
 import { getServerEnv } from '../config/env';
 import { sendEmail, submissionCreatedEmail, decisionMadeEmail } from './email.service';
 
-/** Notifies everyone with approval power (excluding the submitter) that a submission needs review. */
+/**
+ * Notifies the people who should review this submission: the named reviewers
+ * when the submitter picked some, otherwise everyone with approval power.
+ * The submitter is never notified about their own submission.
+ */
 async function notifyApprovers(submission: ApprovalSubmissionRow): Promise<void> {
-  const approvers = await listApprovers(submission.submittedBy);
+  const named = await listReviewers(submission.id);
+  const recipients =
+    named.length > 0
+      ? named
+          .filter((r) => r.userId !== submission.submittedBy)
+          .map((r) => ({ email: r.email }))
+      : await listApprovers(submission.submittedBy);
   const appUrl = getServerEnv().APP_URL;
   await Promise.all(
-    approvers.map((a) =>
+    recipients.map((a) =>
       sendEmail({
         to: a.email,
         subject: `Approval needed: ${submission.title || 'New content'}`,
@@ -61,6 +74,7 @@ export async function userCanApprove(userId: number, systemRole: string): Promis
 export interface SubmissionDetail {
   submission: ApprovalSubmissionRow;
   events: ApprovalEventRow[];
+  reviewers: ReviewerRow[];
   canDecide: boolean;
 }
 
@@ -71,13 +85,21 @@ export async function getSubmissionDetail(
 ): Promise<SubmissionDetail | null> {
   const submission = await getSubmissionById(id);
   if (!submission) return null;
-  const events = await listEventsForSubmission(id);
+  const [events, reviewers] = await Promise.all([
+    listEventsForSubmission(id),
+    listReviewers(id),
+  ]);
 
   const hasApprovePower = await userCanApprove(viewerId, viewerRole);
   const isSelf = submission.submittedBy === viewerId;
-  const canDecide = submission.status === 'pending' && hasApprovePower && !isSelf;
+  // When reviewers are named, only they (or an admin) may decide.
+  const isNamedReviewer =
+    reviewers.length === 0 ||
+    viewerRole === 'admin' ||
+    reviewers.some((r) => r.userId === viewerId);
+  const canDecide = submission.status === 'pending' && hasApprovePower && !isSelf && isNamedReviewer;
 
-  return { submission, events, canDecide };
+  return { submission, events, reviewers, canDecide };
 }
 
 export async function submitContent(p: {
@@ -87,8 +109,18 @@ export async function submitContent(p: {
   caption: string | null;
   imagePath: string;
   submittedBy: number;
+  /** Ask these specific people for approval (empty = anyone with approval power). */
+  reviewerIds?: number[];
 }): Promise<number> {
   const id = await createSubmission(p);
+  if (p.reviewerIds && p.reviewerIds.length > 0) {
+    // Only people who actually hold approval power can be asked.
+    const approvers = await listApprovers();
+    const valid = p.reviewerIds.filter(
+      (rid) => rid !== p.submittedBy && approvers.some((a) => a.id === rid),
+    );
+    if (valid.length > 0) await setReviewers(id, valid);
+  }
   const submission = await getSubmissionById(id);
   if (submission) void notifyApprovers(submission);
   return id;
@@ -127,6 +159,15 @@ export async function decide(
   const hasPower = await userCanApprove(actorId, actorRole);
   if (!hasPower) {
     throw new ApprovalError('You do not have approval power.', 403);
+  }
+  // When the submitter asked specific people, only they (or an admin) may decide.
+  const reviewers = await listReviewers(submissionId);
+  if (
+    reviewers.length > 0 &&
+    actorRole !== 'admin' &&
+    !reviewers.some((r) => r.userId === actorId)
+  ) {
+    throw new ApprovalError('This submission was sent to specific reviewers — only they can decide it.', 403);
   }
 
   const trimmedComment = comment?.trim() || null;

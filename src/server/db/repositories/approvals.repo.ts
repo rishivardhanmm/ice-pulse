@@ -36,6 +36,50 @@ export interface ApprovalEventRow {
   createdAt: string;
 }
 
+export interface ReviewerRow {
+  userId: number;
+  name: string;
+  email: string;
+}
+
+/** Replaces the named-reviewer set for a submission. */
+export async function setReviewers(submissionId: number, userIds: number[]): Promise<void> {
+  const pool = await getPool();
+  await pool
+    .request()
+    .input('submissionId', sql.Int, submissionId)
+    .query('DELETE FROM dbo.approval_reviewers WHERE submission_id = @submissionId');
+  for (const userId of [...new Set(userIds)]) {
+    await pool
+      .request()
+      .input('submissionId', sql.Int, submissionId)
+      .input('userId', sql.Int, userId)
+      .query(
+        `INSERT INTO dbo.approval_reviewers (submission_id, user_id) VALUES (@submissionId, @userId)`,
+      );
+  }
+}
+
+/** Named reviewers for a submission (empty = anyone with approval power may decide). */
+export async function listReviewers(submissionId: number): Promise<ReviewerRow[]> {
+  const pool = await getPool();
+  const res = await pool
+    .request()
+    .input('submissionId', sql.Int, submissionId)
+    .query(`
+      SELECT r.user_id, u.name, u.email
+      FROM dbo.approval_reviewers r
+      JOIN dbo.users u ON u.id = r.user_id
+      WHERE r.submission_id = @submissionId
+      ORDER BY u.name
+    `);
+  return res.recordset.map((r: Record<string, unknown>) => ({
+    userId: Number(r.user_id),
+    name: String(r.name),
+    email: String(r.email),
+  }));
+}
+
 function mapSubmission(r: Record<string, unknown>): ApprovalSubmissionRow {
   return {
     id: Number(r.id),

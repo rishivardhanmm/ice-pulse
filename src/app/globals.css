@@ -1,7 +1,8 @@
 /* ============================================================
    ICE Pulse — global styles
-   Brand tokens, fonts and themes ported from the ICE design
-   system (ice-intelligence-hub reference). Self-hosted fonts.
+   "Midnight Studio" design system: dark indigo brand rail,
+   airy light canvas, surgical gold accents, refined type.
+   Self-hosted fonts from the ICE brand kit.
    ============================================================ */
 
 /* ── Fonts (self-hosted from the ICE brand kit) ───────────── */
@@ -81,8 +82,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Brand palette + Dark theme (default) ─────────────────── */
+/* ── Design tokens ─────────────────────────────────────────── */
 :root {
+  /* Brand palette (constant) */
   --gold: #ffd500;
   --teal: #00d9d0;
   --cerise: #ff86ef;
@@ -90,128 +92,125 @@
   --green: #22d3a0;
   --orange: #ff9d4d;
   --red: #ff5b6a;
-  --red-subtle: rgba(255, 91, 106, 0.12);
+  --red-subtle: rgba(255, 91, 106, 0.1);
+  --indigo: #14082a;
+  --indigo-mid: #1e0f3d;
 
-  --radius: 12px;
-  --sidebar-w: 248px;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --sidebar-w: 264px;
   --topbar-h: 64px;
 
   --font-albra: 'Albra', Georgia, serif;
   --font-poppins: 'Poppins', system-ui, sans-serif;
 
-  /* Light is the default theme. Calm is the only alternate (see below). */
-  --bg: #f5f4fa;
+  /* Canvas + surfaces (Light default) */
+  --bg: #f6f6f9;
   --bg-secondary: #ffffff;
-  --surface: #f4f1fb;
-  --surface-hover: #ece7f7;
-  --border: rgba(20, 8, 42, 0.08);
-  --border-strong: rgba(20, 8, 42, 0.16);
-  --text-primary: #14082a;
-  --text-secondary: #5a4d6e;
-  --text-muted: #8b7fb0;
+  --page-bg: #f6f6f9;
+  --surface: #f3f2f8;
+  --surface-hover: #ecebf4;
+  --border: rgba(20, 8, 42, 0.07);
+  --border-strong: rgba(20, 8, 42, 0.14);
+  --text-primary: #17102b;
+  --text-secondary: #564d6e;
+  --text-muted: #8e86a6;
 
-  --sidebar-bg: #ffffff;
-  --sidebar-border: rgba(20, 8, 42, 0.08);
-  --sidebar-text: #5a4d6e;
-  --nav-hover-bg: rgba(20, 8, 42, 0.05);
-  --nav-hover-text: #14082a;
-  --nav-active-bg: #ffd500;
-  --nav-active-text: #14082a;
-  --nav-badge-bg: rgba(20, 8, 42, 0.08);
-  --nav-badge-text: #14082a;
+  /* Modern aliases (newer components use these names) */
+  --bg-primary: #ffffff;
+  --border-subtle: rgba(20, 8, 42, 0.07);
+  --text-tertiary: #8e86a6;
+  --accent-primary: #14082a;
 
-  --topbar-bg: #ffffff;
-  --topbar-border: rgba(20, 8, 42, 0.08);
-  --topbar-text: #14082a;
-  --topbar-muted: #8b7fb0;
-  --search-bg: rgba(20, 8, 42, 0.04);
+  /* Sidebar — dark indigo rail, constant across themes */
+  --sidebar-bg: linear-gradient(180deg, #180b33 0%, #120724 100%);
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-text: rgba(255, 255, 255, 0.62);
+  --nav-hover-bg: rgba(255, 255, 255, 0.06);
+  --nav-hover-text: #ffffff;
+  --nav-active-bg: rgba(255, 213, 0, 0.11);
+  --nav-active-text: #ffd500;
+  --nav-badge-bg: rgba(255, 255, 255, 0.1);
+  --nav-badge-text: rgba(255, 255, 255, 0.85);
+
+  /* Topbar — light glass over the canvas */
+  --topbar-bg: rgba(255, 255, 255, 0.82);
+  --topbar-border: rgba(20, 8, 42, 0.06);
+  --topbar-text: #17102b;
+  --topbar-muted: #8e86a6;
+  --search-bg: #ffffff;
   --search-border: rgba(20, 8, 42, 0.1);
-  --search-text: #14082a;
-  --search-placeholder: #8b7fb0;
-  --icon-btn-bg: rgba(20, 8, 42, 0.05);
-  --icon-btn-text: #5a4d6e;
+  --search-text: #17102b;
+  --search-placeholder: #a49dbb;
+  --icon-btn-bg: rgba(20, 8, 42, 0.045);
+  --icon-btn-text: #564d6e;
   --icon-btn-hover-bg: rgba(20, 8, 42, 0.09);
-  --org-bg: rgba(20, 8, 42, 0.04);
-  --org-border: rgba(20, 8, 42, 0.1);
-  --org-text: #14082a;
+  --org-bg: rgba(20, 8, 42, 0.035);
+  --org-border: rgba(20, 8, 42, 0.08);
+  --org-text: #17102b;
 
+  /* Cards */
   --card-bg: #ffffff;
-  --card-border: rgba(20, 8, 42, 0.08);
+  --card-border: rgba(20, 8, 42, 0.07);
   --kpi-card-bg: #ffffff;
-  --kpi-card-text: #14082a;
-  --kpi-label-color: #7c6b9a;
+  --kpi-card-text: #17102b;
+  --kpi-label-color: #8e86a6;
 
-  --section-heading: #14082a;
-  --section-subtext: #5a4d6e;
+  --section-heading: #17102b;
+  --section-subtext: #6b6284;
 
-  --status-live-bg: rgba(34, 211, 160, 0.16);
-  --status-live-text: #0d9268;
-  --status-paused-bg: rgba(255, 157, 77, 0.18);
-  --status-paused-text: #c2410c;
-  --status-removed-bg: rgba(255, 91, 106, 0.15);
-  --status-removed-text: #e11d48;
-  --status-neutral-bg: rgba(20, 8, 42, 0.06);
-  --status-neutral-text: #5a4d6e;
+  /* Status */
+  --status-live-bg: rgba(34, 211, 160, 0.13);
+  --status-live-text: #0b8a62;
+  --status-paused-bg: rgba(255, 157, 77, 0.16);
+  --status-paused-text: #b45309;
+  --status-removed-bg: rgba(255, 91, 106, 0.13);
+  --status-removed-text: #dc2643;
+  --status-neutral-bg: rgba(20, 8, 42, 0.055);
+  --status-neutral-text: #564d6e;
 
-  --chart-grid: rgba(20, 8, 42, 0.07);
-  --ai-bg: linear-gradient(135deg, #f1ebfb 0%, #eaf7f6 100%);
-  --ai-border: rgba(199, 157, 254, 0.4);
-  --shadow-card: 0 1px 2px rgba(20, 8, 42, 0.04), 0 6px 20px rgba(20, 8, 42, 0.05);
+  --chart-grid: rgba(20, 8, 42, 0.06);
+  --ai-bg: linear-gradient(135deg, #f4effd 0%, #ecf8f7 100%);
+  --ai-border: rgba(199, 157, 254, 0.35);
+  --shadow-card:
+    0 1px 2px rgba(20, 8, 42, 0.03),
+    0 4px 16px rgba(20, 8, 42, 0.04);
+  --shadow-card-hover:
+    0 2px 4px rgba(20, 8, 42, 0.05),
+    0 12px 32px rgba(20, 8, 42, 0.1);
+  --shadow-pop: 0 16px 48px rgba(20, 8, 42, 0.16);
 }
 
-/* Light tokens live in :root above. Calm is the only alternate theme. */
+/* Calm — soft lavender canvas; the dark sidebar stays constant. */
 [data-theme='calm'] {
-  --bg: #f5f4f9;
-  --bg-secondary: #ffffff;
-  --surface: #ffffff;
-  --surface-hover: #f0ebf8;
-  --border: rgba(199, 157, 254, 0.22);
-  --border-strong: rgba(199, 157, 254, 0.4);
-  --text-primary: #14082a;
-  --text-secondary: #5a4d6e;
-  --text-muted: #8b7fb0;
+  --bg: #f6f3fb;
+  --page-bg: #f6f3fb;
+  --surface: #f2edf9;
+  --surface-hover: #eae2f5;
+  --border: rgba(147, 111, 212, 0.14);
+  --border-strong: rgba(147, 111, 212, 0.28);
 
-  --sidebar-bg: #ffffff;
-  --sidebar-border: rgba(199, 157, 254, 0.18);
-  --sidebar-text: #5a4d6e;
-  --nav-hover-bg: rgba(199, 157, 254, 0.1);
-  --nav-hover-text: #14082a;
-  --nav-active-bg: rgba(199, 157, 254, 0.25);
-  --nav-active-text: #14082a;
-  --nav-badge-bg: rgba(199, 157, 254, 0.15);
-  --nav-badge-text: #14082a;
+  --border-subtle: rgba(147, 111, 212, 0.14);
 
-  --topbar-bg: #ffffff;
-  --topbar-border: rgba(199, 157, 254, 0.22);
-  --topbar-text: #14082a;
-  --topbar-muted: #8b7fb0;
-  --search-bg: rgba(199, 157, 254, 0.08);
-  --search-border: rgba(199, 157, 254, 0.25);
-  --search-text: #14082a;
-  --search-placeholder: #8b7fb0;
-  --icon-btn-bg: rgba(199, 157, 254, 0.1);
-  --icon-btn-text: #5a4d6e;
-  --icon-btn-hover-bg: rgba(199, 157, 254, 0.2);
-  --org-bg: rgba(199, 157, 254, 0.1);
-  --org-border: rgba(199, 157, 254, 0.25);
-  --org-text: #14082a;
+  --topbar-bg: rgba(255, 255, 255, 0.8);
+  --topbar-border: rgba(147, 111, 212, 0.14);
+  --search-border: rgba(147, 111, 212, 0.22);
+  --icon-btn-bg: rgba(147, 111, 212, 0.08);
+  --icon-btn-hover-bg: rgba(147, 111, 212, 0.16);
+  --org-bg: rgba(147, 111, 212, 0.07);
+  --org-border: rgba(147, 111, 212, 0.18);
 
-  --card-bg: #ffffff;
-  --card-border: rgba(199, 157, 254, 0.2);
-  --kpi-card-bg: #ffffff;
-  --kpi-card-text: #14082a;
-  --kpi-label-color: #7c6b9a;
+  --card-border: rgba(147, 111, 212, 0.16);
+  --status-neutral-bg: rgba(147, 111, 212, 0.1);
 
-  --section-heading: #14082a;
-  --section-subtext: #5a4d6e;
-
-  --status-neutral-bg: rgba(199, 157, 254, 0.12);
-  --status-neutral-text: #5a4d6e;
-
-  --chart-grid: rgba(199, 157, 254, 0.18);
-  --ai-bg: linear-gradient(135deg, #ede8f8, #e4dbf2);
-  --ai-border: rgba(199, 157, 254, 0.4);
-  --shadow-card: 0 1px 4px rgba(199, 157, 254, 0.18);
+  --chart-grid: rgba(147, 111, 212, 0.14);
+  --ai-bg: linear-gradient(135deg, #efe8fa, #e7ddf5);
+  --shadow-card:
+    0 1px 2px rgba(114, 76, 180, 0.05),
+    0 4px 16px rgba(114, 76, 180, 0.06);
+  --shadow-card-hover:
+    0 2px 4px rgba(114, 76, 180, 0.07),
+    0 12px 32px rgba(114, 76, 180, 0.13);
 }
 
 @layer base {
@@ -226,23 +225,33 @@
     color: var(--text-primary);
     font-family: var(--font-poppins);
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.55;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
   ::selection {
-    background: rgba(255, 213, 0, 0.3);
+    background: rgba(255, 213, 0, 0.35);
+  }
+  /* Accessible, brand-consistent focus rings everywhere */
+  :focus-visible {
+    outline: 2px solid rgba(255, 190, 0, 0.75);
+    outline-offset: 2px;
+    border-radius: 6px;
   }
 }
 
 /* ICE component classes — plain CSS (outside @layer) so Tailwind never purges
    them, including dynamically-composed names like `kpi-accent-${accent}`. */
 .ice-scroll::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
   .ice-scroll::-webkit-scrollbar-thumb {
     background: var(--border-strong);
     border-radius: 8px;
+  }
+  .ice-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
   }
   .ice-scroll::-webkit-scrollbar-track {
     background: transparent;
@@ -255,7 +264,7 @@
     gap: 5px;
     font-size: 10px;
     font-weight: 600;
-    padding: 2px 9px;
+    padding: 3px 10px;
     border-radius: 999px;
     letter-spacing: 0.3px;
     white-space: nowrap;
@@ -282,7 +291,7 @@
     position: relative;
     overflow: hidden;
     background: var(--surface);
-    border-radius: 8px;
+    border-radius: 10px;
   }
   .skeleton::after {
     content: '';
@@ -293,10 +302,11 @@
     animation: shimmer 1.4s infinite;
   }
 
-  /* Sidebar nav items */
+  /* Sidebar nav items — dark rail */
   .ice-nav-item {
+    position: relative;
     color: var(--sidebar-text);
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: background 0.16s ease, color 0.16s ease;
   }
   .ice-nav-item:hover {
     background: var(--nav-hover-bg);
@@ -308,6 +318,19 @@
     color: var(--nav-active-text);
     font-weight: 600;
   }
+  /* Gold indicator bar on the active item */
+  .ice-nav-item-active::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    border-radius: 999px;
+    background: var(--gold);
+    box-shadow: 0 0 12px rgba(255, 213, 0, 0.55);
+  }
 
   /* Icon buttons (topbar) */
   .ice-icon-btn {
@@ -316,78 +339,93 @@
     width: 36px;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 16px;
     background: var(--icon-btn-bg);
     color: var(--icon-btn-text);
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
   }
   .ice-icon-btn:hover {
     background: var(--icon-btn-hover-bg);
     color: var(--topbar-text);
   }
+  .ice-icon-btn:active {
+    transform: scale(0.96);
+  }
 
-  /* Pill buttons */
+  /* Primary action button — deep indigo, premium feel.
+     (Class keeps its historical name; every page references it.) */
   .ice-pill-btn-gold {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
     border-radius: 999px;
-    padding: 7px 16px;
-    font-size: 12px;
-    font-weight: 700;
-    background: var(--gold);
-    color: #14082a;
-    transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+    padding: 8px 18px;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+    background: var(--indigo);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(20, 8, 42, 0.22);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease;
   }
   .ice-pill-btn-gold:hover {
-    background: #ffe033;
+    background: #241145;
     transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(20, 8, 42, 0.28);
+  }
+  .ice-pill-btn-gold:active {
+    transform: translateY(0);
   }
   .ice-pill-btn-gold:disabled {
-    opacity: 0.55;
+    opacity: 0.5;
     cursor: not-allowed;
     transform: none;
+    box-shadow: none;
   }
   .ice-pill-btn-ghost {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
     border-radius: 999px;
-    padding: 7px 16px;
-    font-size: 12px;
+    padding: 8px 18px;
+    font-size: 12.5px;
     font-weight: 600;
-    background: transparent;
+    background: var(--card-bg);
     border: 1px solid var(--border-strong);
     color: var(--text-secondary);
-    transition: border-color 0.15s ease, color 0.15s ease;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.15s ease;
   }
   .ice-pill-btn-ghost:hover {
-    border-color: var(--text-secondary);
+    border-color: var(--text-muted);
     color: var(--text-primary);
+    transform: translateY(-1px);
   }
   .ice-pill-btn-ghost:disabled {
-    opacity: 0.55;
+    opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
   }
 
-  /* Search input */
+  /* Search input — command-bar style */
   .ice-search {
     width: 100%;
-    border-radius: 999px;
-    padding: 8px 16px 8px 38px;
+    border-radius: 12px;
+    padding: 9px 16px 9px 38px;
     font-size: 13px;
     background: var(--search-bg);
     border: 1px solid var(--search-border);
     color: var(--search-text);
     outline: none;
-    transition: border-color 0.2s ease;
+    box-shadow: 0 1px 2px rgba(20, 8, 42, 0.03);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
   }
   .ice-search::placeholder {
     color: var(--search-placeholder);
   }
   .ice-search:focus {
-    border-color: rgba(255, 213, 0, 0.4);
+    border-color: rgba(255, 190, 0, 0.55);
+    box-shadow: 0 0 0 3px rgba(255, 213, 0, 0.16);
   }
 
   /* Cards */
@@ -402,13 +440,14 @@
   }
   .ice-card-interactive:hover {
     transform: translateY(-2px);
-    border-color: rgba(255, 213, 0, 0.4);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: rgba(20, 8, 42, 0.14);
+    box-shadow: var(--shadow-card-hover);
   }
 
   .ice-section-title {
     font-family: var(--font-albra);
     font-weight: 800;
+    letter-spacing: -0.01em;
     color: var(--section-heading);
   }
 
@@ -418,21 +457,33 @@
     border-collapse: collapse;
   }
   .ice-table th {
-    font-size: 10px;
+    font-size: 10.5px;
     font-weight: 600;
-    letter-spacing: 0.8px;
+    letter-spacing: 0.7px;
     text-transform: uppercase;
     color: var(--text-muted);
-    padding: 10px 12px;
+    padding: 11px 14px;
     text-align: left;
+    background: var(--surface);
     border-bottom: 1px solid var(--card-border);
     white-space: nowrap;
   }
+  .ice-table th:first-child {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+  }
+  .ice-table th:last-child {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+  }
   .ice-table td {
-    padding: 12px;
-    font-size: 12.5px;
+    padding: 13px 14px;
+    font-size: 13px;
     color: var(--text-secondary);
     border-bottom: 1px solid var(--card-border);
+  }
+  .ice-table tbody tr {
+    transition: background 0.12s ease;
   }
   .ice-table tbody tr:last-child td {
     border-bottom: none;
@@ -445,24 +496,25 @@
     font-weight: 500;
   }
 
-  /* KPI card top accents */
+  /* KPI accents — soft diagonal colour wash + matching hover ring.
+     Composed dynamically as `kpi-accent-${accent}`; keep all six. */
   .kpi-accent-gold {
-    border-top: 3px solid var(--gold);
+    background-image: linear-gradient(135deg, rgba(255, 213, 0, 0.09), transparent 55%);
   }
   .kpi-accent-teal {
-    border-top: 3px solid var(--teal);
+    background-image: linear-gradient(135deg, rgba(0, 217, 208, 0.09), transparent 55%);
   }
   .kpi-accent-violet {
-    border-top: 3px solid var(--violet);
+    background-image: linear-gradient(135deg, rgba(199, 157, 254, 0.12), transparent 55%);
   }
   .kpi-accent-cerise {
-    border-top: 3px solid var(--cerise);
+    background-image: linear-gradient(135deg, rgba(255, 134, 239, 0.1), transparent 55%);
   }
   .kpi-accent-green {
-    border-top: 3px solid var(--green);
+    background-image: linear-gradient(135deg, rgba(34, 211, 160, 0.1), transparent 55%);
   }
   .kpi-accent-orange {
-    border-top: 3px solid var(--orange);
+    background-image: linear-gradient(135deg, rgba(255, 157, 77, 0.1), transparent 55%);
   }
 
   /* Action chips */
@@ -474,15 +526,16 @@
     padding: 7px 16px;
     font-size: 12px;
     font-weight: 500;
-    background: var(--surface);
+    background: var(--card-bg);
     border: 1px solid var(--card-border);
     color: var(--text-secondary);
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
   }
   .ice-action-chip:hover {
-    background: rgba(255, 213, 0, 0.1);
-    border-color: rgba(255, 213, 0, 0.3);
+    background: var(--surface);
+    border-color: var(--border-strong);
     color: var(--text-primary);
+    transform: translateY(-1px);
   }
 
 /* Keyframes for the skeleton shimmer (referenced from raw CSS above, so it is

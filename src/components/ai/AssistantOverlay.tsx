@@ -1,35 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { defaultRange, todayUtc } from '@/lib/date';
+import { useEffect } from 'react';
+import { ALL_TIME_START, todayUtc } from '@/lib/date';
 import { AssistantChat } from './AssistantChat';
-
-function DateInput({
-  value,
-  min,
-  max,
-  onChange,
-  label,
-}: {
-  value: string;
-  min?: string;
-  max?: string;
-  onChange: (v: string) => void;
-  label: string;
-}) {
-  return (
-    <input
-      type="date"
-      value={value}
-      min={min}
-      max={max}
-      aria-label={label}
-      onChange={(e) => e.target.value && onChange(e.target.value)}
-      className="rounded-lg px-2 py-1.5 text-xs outline-none"
-      style={{ background: 'var(--search-bg)', border: '1px solid var(--search-border)', color: 'var(--search-text)', colorScheme: 'light' }}
-    />
-  );
-}
 
 export function AssistantOverlay({
   onClose,
@@ -38,17 +11,18 @@ export function AssistantOverlay({
   onClose: () => void;
   initialQuestion?: string;
 }) {
-  const def = defaultRange(365);
-  const [from, setFrom] = useState(def.from);
-  const [to, setTo] = useState(def.to);
+  // Ask Pulse always reasons over the full synced history — no timeline to pick.
+  const from = ALL_TIME_START;
+  const to = todayUtc();
 
-  // Close on Escape.
+  // Close on Escape. Capture phase so this fires even if focus is inside a
+  // native form control (e.g. a date/text input) that would otherwise consume the key first.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, { capture: true });
+    return () => window.removeEventListener('keydown', onKey, { capture: true });
   }, [onClose]);
 
   return (
@@ -65,20 +39,13 @@ export function AssistantOverlay({
             <div>
               <p className="ice-section-title text-base leading-tight">Pulse Assistant</p>
               <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                Answers query your database — grounded in real data.
+                Answers query your database — grounded in real data, all time.
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="hidden items-center gap-1.5 sm:flex">
-              <DateInput value={from} max={to} onChange={setFrom} label="From date" />
-              <span style={{ color: 'var(--text-muted)' }}>→</span>
-              <DateInput value={to} min={from} max={todayUtc()} onChange={setTo} label="To date" />
-            </div>
-            <button onClick={onClose} className="ice-icon-btn" aria-label="Close assistant" type="button">
-              <i className="bi bi-x-lg" aria-hidden="true" />
-            </button>
-          </div>
+          <button onClick={onClose} className="ice-icon-btn" aria-label="Close assistant" type="button">
+            <i className="bi bi-x-lg" aria-hidden="true" />
+          </button>
         </div>
       </header>
 

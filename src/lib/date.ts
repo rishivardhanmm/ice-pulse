@@ -47,3 +47,9 @@ export const RANGE_PRESETS: RangePreset[] = [
   { key: '30d', label: 'Last 30 days', days: 30 },
   { key: '90d', label: 'Last 90 days', days: 90 },
 ];
+
+/**
+ * "All time" range start — comfortably before any campaign data ICE has, so
+ * from=ALL_TIME_START..today covers everything ever synced.
+ */
+export const ALL_TIME_START = '2015-01-01';

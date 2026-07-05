@@ -106,6 +106,9 @@ const envSchema = z.object({
   META_APP_SECRET: optionalString,     // from App Dashboard > Settings > Basic
   META_API_VERSION: z.string().default('v22.0'),
 
+  // GNews (news feed for News Insights page)
+  GNEWS_API_KEY: optionalString,
+
   // SendGrid (email notifications)
   SENDGRID_API_KEY: optionalString,
   SENDGRID_FROM_EMAIL: optionalString,
@@ -141,6 +144,37 @@ const envSchema = z.object({
   AI_OUTPUT_PRICE_PER_1M: numish(0.6),
   AI_MAX_OUTPUT_TOKENS: portish(500),
   AI_SQL_MAX_ATTEMPTS: portish(3),
+
+  // ── Power BI (Microsoft — service principal / app-only) ──────────────
+  // Azure AD app: Settings > Certificates & secrets > Client secret value
+  POWERBI_TENANT_ID: optionalString,
+  POWERBI_CLIENT_ID: optionalString,
+  POWERBI_CLIENT_SECRET: optionalString,
+
+  // ── Zoho Social ──────────────────────────────────────────────────────
+  // Create a Server-based Application in api-console.zoho.com
+  // Scopes: ZohoSocial.profiles.READ ZohoSocial.posts.READ ZohoSocial.reports.READ
+  //         ZohoSocial.brands.READ ZohoSocial.posts.CREATE
+  ZOHO_SOCIAL_CLIENT_ID: optionalString,
+  ZOHO_SOCIAL_CLIENT_SECRET: optionalString,
+  // Your Zoho org ID — visible in the Zoho Social URL: /org/{id}/
+  ZOHO_SOCIAL_ORG_ID: optionalString,
+  // Data-center TLD. 'com' (Global) | 'com.au' (AU) | 'eu' (EU) | 'in' (IN).
+  // ICE Creates is on AU, so defaults to 'com.au'.
+  ZOHO_SOCIAL_DC: z.preprocess(
+    (v) => (v === undefined || String(v).trim() === '' ? 'com.au' : String(v).trim()),
+    z.string(),
+  ),
+  // 32+ char key for AES-256-GCM token encryption (same pattern as Canva).
+  ZOHO_SOCIAL_TOKEN_ENCRYPTION_KEY: optionalString,
+  // Redirect URI registered in the Zoho API Console.
+  ZOHO_SOCIAL_REDIRECT_URI: z.preprocess(
+    (v) =>
+      v === undefined || String(v).trim() === ''
+        ? 'http://localhost:3000/api/zoho-social/callback'
+        : String(v).trim(),
+    z.string(),
+  ),
 
   // ── Canva Connect (Public integration, draft/testing mode — internal only) ──
   // Endpoints default to the documented Canva Connect URLs; override only if the
@@ -414,6 +448,24 @@ export function isGoogleAdsConfigured(): boolean {
   );
 }
 
+export interface GNewsConfig {
+  apiKey: string;
+}
+
+/** True when GNews API key is present. */
+export function isGNewsConfigured(): boolean {
+  return Boolean(getServerEnv().GNEWS_API_KEY);
+}
+
+/** GNews config; throws a clear error when the key is missing. */
+export function getGNewsConfig(): GNewsConfig {
+  const env = getServerEnv();
+  if (!env.GNEWS_API_KEY) {
+    throw new Error('GNews is not configured. Set GNEWS_API_KEY in .env.local (free key from gnews.io).');
+  }
+  return { apiKey: env.GNEWS_API_KEY };
+}
+
 export interface MetaAdsConfig {
   accessToken: string;
   adAccountId: string;
@@ -445,6 +497,37 @@ export function getMetaAdsConfig(): MetaAdsConfig {
     appId: env.META_APP_ID || undefined,
     appSecret: env.META_APP_SECRET || undefined,
     apiVersion: env.META_API_VERSION,
+  };
+}
+
+export interface PowerBIConfig {
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
+}
+
+/** True when all three Power BI service-principal credentials are present. */
+export function isPowerBIConfigured(): boolean {
+  const env = getServerEnv();
+  return Boolean(env.POWERBI_TENANT_ID && env.POWERBI_CLIENT_ID && env.POWERBI_CLIENT_SECRET);
+}
+
+/** Power BI config; throws a clear error listing what's missing. */
+export function getPowerBIConfig(): PowerBIConfig {
+  const env = getServerEnv();
+  const missing: string[] = [];
+  if (!env.POWERBI_TENANT_ID) missing.push('POWERBI_TENANT_ID');
+  if (!env.POWERBI_CLIENT_ID) missing.push('POWERBI_CLIENT_ID');
+  if (!env.POWERBI_CLIENT_SECRET) missing.push('POWERBI_CLIENT_SECRET');
+  if (missing.length > 0) {
+    throw new Error(
+      `Power BI is not configured. Missing: ${missing.join(', ')}. Set these in .env.local (see .env.example).`,
+    );
+  }
+  return {
+    tenantId: env.POWERBI_TENANT_ID,
+    clientId: env.POWERBI_CLIENT_ID,
+    clientSecret: env.POWERBI_CLIENT_SECRET,
   };
 }
 
@@ -556,6 +639,53 @@ export function getCanvaConfig(): CanvaConfig {
   };
 }
 
+export interface ZohoSocialConfig {
+  clientId: string;
+  clientSecret: string;
+  orgId: string;
+  dc: string;
+  redirectUri: string;
+  tokenEncryptionKey: string;
+  /** OAuth authorization endpoint */
+  authorizeUrl: string;
+  /** OAuth token endpoint */
+  tokenUrl: string;
+  /** REST API base */
+  apiBaseUrl: string;
+}
+
+/** True when the minimum Zoho Social credentials are present. */
+export function isZohoSocialConfigured(): boolean {
+  const env = getServerEnv();
+  return Boolean(env.ZOHO_SOCIAL_CLIENT_ID && env.ZOHO_SOCIAL_CLIENT_SECRET && env.ZOHO_SOCIAL_ORG_ID);
+}
+
+/** Zoho Social config; throws a clear error listing what's missing. */
+export function getZohoSocialConfig(): ZohoSocialConfig {
+  const env = getServerEnv();
+  const missing: string[] = [];
+  if (!env.ZOHO_SOCIAL_CLIENT_ID) missing.push('ZOHO_SOCIAL_CLIENT_ID');
+  if (!env.ZOHO_SOCIAL_CLIENT_SECRET) missing.push('ZOHO_SOCIAL_CLIENT_SECRET');
+  if (!env.ZOHO_SOCIAL_ORG_ID) missing.push('ZOHO_SOCIAL_ORG_ID');
+  if (missing.length > 0) {
+    throw new Error(
+      `Zoho Social is not configured. Missing: ${missing.join(', ')}. Set these in .env.local (see .env.example).`,
+    );
+  }
+  const dc = env.ZOHO_SOCIAL_DC;
+  return {
+    clientId: env.ZOHO_SOCIAL_CLIENT_ID,
+    clientSecret: env.ZOHO_SOCIAL_CLIENT_SECRET,
+    orgId: env.ZOHO_SOCIAL_ORG_ID,
+    dc,
+    redirectUri: env.ZOHO_SOCIAL_REDIRECT_URI,
+    tokenEncryptionKey: env.ZOHO_SOCIAL_TOKEN_ENCRYPTION_KEY,
+    authorizeUrl: `https://accounts.zoho.${dc}/oauth/v2/auth`,
+    tokenUrl: `https://accounts.zoho.${dc}/oauth/v2/token`,
+    apiBaseUrl: `https://www.zohoapis.${dc}/social/v2`,
+  };
+}
+
 /** Value-free snapshot of configuration state, safe to log or expose. */
 export function describeConfigState() {
   const env = getServerEnv();
@@ -598,6 +728,12 @@ export function describeConfigState() {
       scopes: env.CANVA_SCOPES,
       apiBaseUrl: env.CANVA_API_BASE_URL,
       hasEncryptionKey: env.CANVA_TOKEN_ENCRYPTION_KEY.length >= 16,
+    },
+    zohoSocial: {
+      configured: isZohoSocialConfigured(),
+      dc: env.ZOHO_SOCIAL_DC,
+      redirectUri: env.ZOHO_SOCIAL_REDIRECT_URI,
+      hasEncryptionKey: (env.ZOHO_SOCIAL_TOKEN_ENCRYPTION_KEY ?? '').length >= 16,
     },
   };
 }

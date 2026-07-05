@@ -7,6 +7,7 @@ import { jsonOk, jsonError } from '@/server/api/http';
 import { defaultRange, isValidDateStr } from '@/lib/date';
 import { toErrorMessage } from '@/server/logger';
 import { getCampaignIdsForClient } from '@/server/db/repositories/campaigns.repo';
+import { getMetaCampaignIdsForClient } from '@/server/db/repositories/meta-metrics.repo';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -47,10 +48,15 @@ export async function POST(req: Request) {
     const to = isValidDateStr(body.to) ? (body.to as string) : def.to;
     const range = from > to ? { from: to, to: from } : { from, to };
 
-    // Scope AI to client's campaigns when role is 'client'.
+    // Scope AI to client's campaigns when role is 'client' — both channels,
+    // each in its own id space (Google and Meta campaign ids are unrelated).
     let allowedCampaignIds: number[] | undefined;
+    let allowedMetaCampaignIds: number[] | undefined;
     if (session.user.role === 'client' && session.user.clientId != null) {
-      allowedCampaignIds = await getCampaignIdsForClient(session.user.clientId);
+      [allowedCampaignIds, allowedMetaCampaignIds] = await Promise.all([
+        getCampaignIdsForClient(session.user.clientId),
+        getMetaCampaignIdsForClient(session.user.clientId),
+      ]);
     }
 
     const data = await askAi(
@@ -59,6 +65,7 @@ export async function POST(req: Request) {
       range.to,
       sanitizeHistory(body.history),
       allowedCampaignIds,
+      allowedMetaCampaignIds,
     );
     return jsonOk(data);
   } catch (err) {

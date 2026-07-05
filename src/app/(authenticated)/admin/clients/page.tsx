@@ -20,6 +20,8 @@ interface Campaign {
   clientId: number | null;
   clientName: string | null;
   clientSlug: string | null;
+  /** Which ad platform this campaign belongs to. */
+  channel: 'google' | 'meta';
 }
 
 interface User {
@@ -123,11 +125,11 @@ export default function AdminClientsPage() {
     }
   }
 
-  async function assignCampaign(campaignId: number, clientId: number | null) {
+  async function assignCampaign(campaignId: number, clientId: number | null, channel: 'google' | 'meta') {
     await fetch('/api/admin/campaigns', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ campaignId, clientId }),
+      body: JSON.stringify({ campaignId, clientId, channel }),
     });
     await load();
   }
@@ -445,6 +447,11 @@ export default function AdminClientsPage() {
                         style={{ background: 'var(--surface-2)' }}
                       >
                         <i className="bi bi-check-circle-fill text-xs flex-shrink-0" style={{ color: 'var(--green)' }} />
+                        <i
+                          className={`bi ${c.channel === 'meta' ? 'bi-meta' : 'bi-google'} flex-shrink-0 text-xs`}
+                          style={{ color: c.channel === 'meta' ? '#1877F2' : '#4285F4' }}
+                          title={c.channel === 'meta' ? 'Meta Ads' : 'Google Ads'}
+                        />
                         <span className="flex-1 truncate text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
                           {c.campaignName ?? `Campaign #${c.id}`}
                         </span>
@@ -454,7 +461,7 @@ export default function AdminClientsPage() {
                           </span>
                         )}
                         <button
-                          onClick={() => void assignCampaign(c.id, null)}
+                          onClick={() => void assignCampaign(c.id, null, c.channel)}
                           className="ml-1 flex-shrink-0 text-xs"
                           style={{ color: 'var(--red)' }}
                           title="Remove from client"
@@ -478,11 +485,16 @@ export default function AdminClientsPage() {
                           style={{ background: 'var(--surface-2)' }}
                         >
                           <i className="bi bi-dash-circle text-xs flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
+                          <i
+                            className={`bi ${c.channel === 'meta' ? 'bi-meta' : 'bi-google'} flex-shrink-0 text-xs`}
+                            style={{ color: c.channel === 'meta' ? '#1877F2' : '#4285F4' }}
+                            title={c.channel === 'meta' ? 'Meta Ads' : 'Google Ads'}
+                          />
                           <span className="flex-1 truncate text-xs" style={{ color: 'var(--text-secondary)' }}>
                             {c.campaignName ?? `Campaign #${c.id}`}
                           </span>
                           <button
-                            onClick={() => void assignCampaign(c.id, selectedClient.id)}
+                            onClick={() => void assignCampaign(c.id, selectedClient.id, c.channel)}
                             className="ml-1 flex-shrink-0 text-xs font-semibold"
                             style={{ color: 'var(--gold)' }}
                             title="Assign to this client"

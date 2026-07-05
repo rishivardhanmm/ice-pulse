@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { RANGE_PRESETS, defaultRange, isValidDateStr, shiftDays, todayUtc } from '@/lib/date';
+import { ALL_TIME_START, RANGE_PRESETS, defaultRange, isValidDateStr, shiftDays, todayUtc } from '@/lib/date';
 
 /**
  * Date-range control that stores the selection in the URL (?from=&to=) so the
@@ -59,6 +59,18 @@ export function DateRangePicker() {
             </button>
           );
         })}
+        <button
+          type="button"
+          onClick={() => apply(ALL_TIME_START, today)}
+          className="rounded-full px-3 py-1 text-[11px] font-medium transition-colors"
+          style={
+            from <= ALL_TIME_START && to === today
+              ? { background: 'var(--gold)', color: '#14082a', fontWeight: 700 }
+              : { color: 'var(--text-secondary)' }
+          }
+        >
+          All time
+        </button>
       </div>
       <div className="flex items-center gap-1.5">
         <DateInput value={from} max={to} onChange={(v) => apply(v, to)} ariaLabel="From date" />

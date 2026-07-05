@@ -1,5 +1,5 @@
 import type { ConnectionStatus, DataConnector, SyncOptions, SyncResult } from '../connector';
-import { getAdAccountInfo, fetchInsights } from './client';
+import { getAdAccountInfo, fetchCampaigns, fetchInsights } from './client';
 import { mapInsightRow } from './mapper';
 import { friendlyMetaError } from './errors';
 import { getMetaAdsConfig, isMetaAdsConfigured } from '../../server/config/env';
@@ -79,6 +79,24 @@ export class MetaAdsConnector implements DataConnector {
         timezone: accountInfo.timezone_name,
       });
 
+      // Upsert the full campaign list first (with status + objective), so
+      // campaigns exist even when they have no delivery in the sync window.
+      const campaignList = await fetchCampaigns(cfg.apiVersion, cfg.adAccountId, cfg.accessToken);
+      logger.info('Meta Ads campaigns fetched', { count: campaignList.length });
+
+      const campaignDbIdByMetaId = new Map<string, number>();
+      for (const c of campaignList) {
+        const dbId = await upsertMetaCampaign({
+          platformAccountId,
+          metaAccountId: cfg.adAccountId,
+          metaCampaignId: c.id,
+          name: c.name,
+          status: c.effective_status ?? c.status ?? null,
+          objective: c.objective ?? null,
+        });
+        campaignDbIdByMetaId.set(c.id, dbId);
+      }
+
       // Fetch campaign-level daily insights
       const rows = await fetchInsights(
         cfg.apiVersion,
@@ -89,8 +107,6 @@ export class MetaAdsConnector implements DataConnector {
       );
 
       logger.info('Meta Ads insight rows fetched', { count: rows.length });
-
-      const campaignDbIdByMetaId = new Map<string, number>();
 
       for (const row of rows) {
         const mapped = mapInsightRow(row);
@@ -107,7 +123,7 @@ export class MetaAdsConnector implements DataConnector {
             metaAccountId: cfg.adAccountId,
             metaCampaignId: mapped.campaignId,
             name: mapped.campaignName,
-            status: null, // insights endpoint doesn't return status; connector can be extended later
+            status: null, // insights row for a campaign missing from the list endpoint
             objective: null,
           });
           campaignDbIdByMetaId.set(mapped.campaignId, campaignDbId);

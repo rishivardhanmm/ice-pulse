@@ -50,6 +50,15 @@ export async function POST(req: Request) {
 
     const imagePath = await saveUploadedImage(image);
 
+    const reviewerIdsRaw = form.get('reviewerIds');
+    const reviewerIds =
+      typeof reviewerIdsRaw === 'string' && reviewerIdsRaw.trim()
+        ? reviewerIdsRaw
+            .split(',')
+            .map((s) => parseInt(s.trim(), 10))
+            .filter(Number.isFinite)
+        : [];
+
     const id = await submitContent({
       clientId: Number.isFinite(clientId as number) ? clientId : null,
       campaignId: Number.isFinite(campaignId as number) ? campaignId : null,
@@ -57,6 +66,7 @@ export async function POST(req: Request) {
       caption: typeof caption === 'string' && caption.trim() ? caption.trim().slice(0, 2000) : null,
       imagePath,
       submittedBy: Number(session.user.id),
+      reviewerIds,
     });
 
     return jsonOk({ id });

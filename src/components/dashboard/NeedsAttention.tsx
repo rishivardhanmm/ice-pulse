@@ -16,7 +16,15 @@ export function NeedsAttention({ from, to }: { from: string; to: string }) {
 
   return (
     <div>
-      <h2 className="ice-section-title mb-3 text-base">Needs attention</h2>
+      <h2 className="ice-section-title mb-3 flex items-center gap-2 text-base">
+        Needs attention
+        <span
+          className="rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wide"
+          style={{ background: 'var(--ai-bg)', color: 'var(--text-secondary)', border: '1px solid var(--ai-border)' }}
+        >
+          AI
+        </span>
+      </h2>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {data.signals.map((s) => {
           const st = STYLE[s.severity];

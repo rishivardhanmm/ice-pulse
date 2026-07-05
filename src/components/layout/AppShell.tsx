@@ -21,7 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           />
         )}
         <Topbar onMenuClick={() => setOpen(true)} />
-        <main className="min-h-screen pt-16 lg:ml-[248px]">
+        <main className="min-h-screen pt-16 lg:ml-[264px]">
           <div className="mx-auto w-full max-w-[1440px] animate-fadeIn p-4 sm:p-6 lg:p-8">{children}</div>
         </main>
         <AssistantLauncher />

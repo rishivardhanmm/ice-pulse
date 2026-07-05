@@ -21,9 +21,11 @@
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
     "@types/bcryptjs": "^2.4.6",
+    "@types/react-big-calendar": "^1.16.3",
     "basic-ftp": "^6.0.1",
     "bcryptjs": "^3.0.3",
     "bootstrap-icons": "^1.11.3",
+    "date-fns": "^4.4.0",
     "dotenv": "^16.4.5",
     "google-ads-api": "^17.0.0",
     "google-auth-library": "^10.7.0",
@@ -31,6 +33,7 @@
     "next": "^14.2.5",
     "next-auth": "^4.24.14",
     "react": "^18.3.1",
+    "react-big-calendar": "^1.20.0",
     "react-dom": "^18.3.1",
     "recharts": "^2.12.7",
     "zod": "^3.23.8"

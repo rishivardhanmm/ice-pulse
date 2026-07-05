@@ -20,9 +20,9 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Channels',
     items: [
       { label: 'Google Ads', href: '/google-ads', icon: 'bi-google' },
-      { label: 'Meta Ads', href: '/sync', icon: 'bi-meta' },
-      { label: 'Zoho Social', href: '/roadmap', icon: 'bi-share-fill', disabled: true, badge: 'Soon' },
-      { label: 'Social Posts', href: '/roadmap', icon: 'bi-chat-square-heart', disabled: true, badge: 'Soon' },
+      { label: 'Meta Ads', href: '/meta-ads', icon: 'bi-meta' },
+      { label: 'News Insights', href: '/news-insights', icon: 'bi-newspaper' },
+      { label: 'Social Posts', href: '/social-posts', icon: 'bi-chat-square-heart' },
     ],
   },
   {
@@ -30,11 +30,14 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Sync Centre', href: '/sync', icon: 'bi-arrow-repeat' },
       { label: 'Approvals', href: '/approvals', icon: 'bi-check2-square' },
+      { label: 'Campaign Calendar', href: '/calendar', icon: 'bi-calendar3' },
     ],
   },
   {
     label: 'Platform',
     items: [
+      { label: 'Ad Copy Studio', href: '/ad-copy', icon: 'bi-stars' },
+      { label: 'Power BI', href: '/power-bi', icon: 'bi-bar-chart-line-fill' },
       { label: 'Reports', href: '/reports', icon: 'bi-file-earmark-text' },
       { label: 'Canva', href: '/canva', icon: 'bi-palette' },
       { label: 'Roadmap', href: '/roadmap', icon: 'bi-compass' },
@@ -62,8 +65,14 @@ export interface RouteMeta {
 export const ROUTE_META: Record<string, RouteMeta> = {
   '/': { title: 'Dashboard Overview', crumb: 'Overview' },
   '/google-ads': { title: 'Google Ads Performance', crumb: 'Channels' },
+  '/meta-ads': { title: 'Meta Ads Performance', crumb: 'Channels' },
   '/sync': { title: 'Sync Centre', crumb: 'Operations' },
   '/approvals': { title: 'Content Approvals', crumb: 'Operations' },
+  '/news-insights': { title: 'News Insights', crumb: 'Channels' },
+  '/calendar': { title: 'Campaign Calendar', crumb: 'Operations' },
+  '/social-posts': { title: 'Social Posts', crumb: 'Channels' },
+  '/ad-copy': { title: 'Ad Copy Studio', crumb: 'Platform' },
+  '/power-bi': { title: 'Power BI Reports', crumb: 'Platform' },
   '/reports': { title: 'Client Reports', crumb: 'Platform' },
   '/canva': { title: 'Canva Integration', crumb: 'Platform' },
   '/roadmap': { title: 'Roadmap & Future Modules', crumb: 'Platform' },
@@ -73,6 +82,11 @@ export const ROUTE_META: Record<string, RouteMeta> = {
 
 export function routeMetaFor(pathname: string): RouteMeta {
   if (pathname.startsWith('/google-ads')) return ROUTE_META['/google-ads'];
+  if (pathname.startsWith('/meta-ads')) return ROUTE_META['/meta-ads'];
   if (pathname.startsWith('/approvals')) return ROUTE_META['/approvals'];
+  if (pathname.startsWith('/news-insights')) return ROUTE_META['/news-insights'];
+  if (pathname.startsWith('/calendar')) return ROUTE_META['/calendar'];
+  if (pathname.startsWith('/social-posts')) return ROUTE_META['/social-posts'];
+  if (pathname.startsWith('/power-bi')) return ROUTE_META['/power-bi'];
   return ROUTE_META[pathname] ?? { title: 'ICE Pulse', crumb: 'Platform' };
 }

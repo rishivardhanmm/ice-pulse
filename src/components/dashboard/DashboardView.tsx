@@ -17,12 +17,10 @@ import { ConfigNotice } from '@/components/common/ConfigNotice';
 import { LastSyncBadge } from './LastSyncBadge';
 import { KpiGrid } from './KpiGrid';
 import { TrendChart } from '@/components/charts/TrendChart';
-import { InsightCards } from './InsightCards';
 import { TopCampaignsTable } from './TopCampaignsTable';
 import { FilterBar } from './FilterBar';
-import { PulseAssistant } from './PulseAssistant';
-import { AiInsightsPanel } from '@/components/ai/AiInsightsPanel';
 import { NeedsAttention } from './NeedsAttention';
+import { ChannelSplit } from './ChannelSplit';
 
 export function DashboardView() {
   const sp = useSearchParams();
@@ -39,24 +37,67 @@ export function DashboardView() {
   const campaignIds = sp.get('campaignIds')
     ? sp.get('campaignIds')!.split(',').map(Number).filter(Number.isFinite)
     : [];
+  const metaCampaignIds = sp.get('metaCampaignIds')
+    ? sp.get('metaCampaignIds')!.split(',').map(Number).filter(Number.isFinite)
+    : [];
+  const channelParam = sp.get('channel');
+  const channel = channelParam === 'google' || channelParam === 'meta' ? channelParam : 'all';
+
+  const hasCampaignSelection = campaignIds.length > 0 || metaCampaignIds.length > 0;
 
   const url = overviewUrl(from, to, {
     clientId: isStaff ? clientId : null,
-    campaignIds: isStaff && campaignIds.length > 0 ? campaignIds : [],
+    campaignIds: isStaff && hasCampaignSelection ? campaignIds : [],
+    metaCampaignIds: isStaff && hasCampaignSelection ? metaCampaignIds : [],
+    channel,
   });
 
   const { data, loading, error, refetch } = useFetch<DashboardOverviewDTO>(url);
 
+  const setChannel = (next: 'all' | 'google' | 'meta') => {
+    const params = new URLSearchParams(sp.toString());
+    if (next === 'all') params.delete('channel');
+    else params.set('channel', next);
+    router.push(`/?${params.toString()}`);
+  };
+
   return (
     <>
-      <PageHeader title="Dashboard Overview" subtitle="Your Google Ads performance at a glance.">
+      <PageHeader title="Dashboard Overview" subtitle="Your advertising performance across Google and Meta at a glance.">
         <DateRangePicker />
         {data && <LastSyncBadge lastSyncedAt={data.lastSyncedAt} />}
       </PageHeader>
 
-      {/* Filter bar — staff only */}
+      {/* Channel switcher + filter bar — staff only */}
       {isStaff && (
-        <div className="mb-4">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div
+            className="flex items-center gap-0.5 rounded-xl p-0.5"
+            style={{ background: 'var(--surface)', border: '1px solid var(--card-border)' }}
+          >
+            {(
+              [
+                { key: 'all', label: 'All channels', icon: 'bi-collection' },
+                { key: 'google', label: 'Google', icon: 'bi-google' },
+                { key: 'meta', label: 'Meta', icon: 'bi-meta' },
+              ] as const
+            ).map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => setChannel(c.key)}
+                className="flex items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-xs font-semibold transition-colors"
+                style={
+                  channel === c.key
+                    ? { background: 'var(--card-bg)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-card)' }
+                    : { color: 'var(--text-muted)' }
+                }
+              >
+                <i className={`bi ${c.icon} text-[11px]`} aria-hidden="true" />
+                {c.label}
+              </button>
+            ))}
+          </div>
           <FilterBar showClientFilter={true} />
         </div>
       )}
@@ -74,6 +115,7 @@ export function DashboardView() {
               const next = new URLSearchParams(sp.toString());
               next.delete('clientId');
               next.delete('campaignIds');
+              next.delete('metaCampaignIds');
               router.push(`/?${next.toString()}`);
             }}
             className="ml-auto text-xs opacity-70 hover:opacity-100"
@@ -82,17 +124,19 @@ export function DashboardView() {
           </button>
         </div>
       )}
-      {isStaff && !clientId && campaignIds.length > 0 && (
+      {isStaff && !clientId && hasCampaignSelection && (
         <div
           className="mb-4 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
           style={{ background: 'rgba(255,213,0,0.1)', color: 'var(--gold)', border: '1px solid rgba(255,213,0,0.25)' }}
         >
           <i className="bi bi-megaphone-fill text-xs" />
-          Viewing {campaignIds.length} selected campaign{campaignIds.length !== 1 ? 's' : ''}
+          Viewing {campaignIds.length + metaCampaignIds.length} selected campaign
+          {campaignIds.length + metaCampaignIds.length !== 1 ? 's' : ''}
           <button
             onClick={() => {
               const next = new URLSearchParams(sp.toString());
               next.delete('campaignIds');
+              next.delete('metaCampaignIds');
               router.push(`/?${next.toString()}`);
             }}
             className="ml-auto text-xs opacity-70 hover:opacity-100"
@@ -122,15 +166,13 @@ function DashboardContent({ data }: { data: DashboardOverviewDTO }) {
     <div className="space-y-6">
       {!data.googleAds.configured && <ConfigNotice />}
 
-      <PulseAssistant overview={data} />
-
       {data.hasData ? (
         <>
           <KpiGrid summary={data.summary} previous={data.previous} currency={data.currency} />
 
-          <NeedsAttention from={data.dateRange.from} to={data.dateRange.to} />
+          {data.channels && <ChannelSplit channels={data.channels} currency={data.currency} />}
 
-          <AiInsightsPanel from={data.dateRange.from} to={data.dateRange.to} />
+          <NeedsAttention from={data.dateRange.from} to={data.dateRange.to} />
 
           <Card>
             <div className="mb-1 flex items-center justify-between">
@@ -142,17 +184,19 @@ function DashboardContent({ data }: { data: DashboardOverviewDTO }) {
             <TrendChart points={data.trends} currency={data.currency} />
           </Card>
 
-          <div>
-            <h2 className="ice-section-title mb-3 text-base">Quick insights</h2>
-            <InsightCards insights={data.insights} />
-          </div>
-
           <Card padded={false}>
             <div className="flex items-center justify-between p-5 pb-3">
               <h2 className="ice-section-title text-base">Top campaigns</h2>
-              <Link href="/google-ads" className="text-xs font-semibold" style={{ color: 'var(--gold)' }}>
-                View all →
-              </Link>
+              <div className="flex items-center gap-3 text-xs font-semibold">
+                <Link href="/google-ads" style={{ color: 'var(--text-secondary)' }}>
+                  <i className="bi bi-google mr-1" aria-hidden="true" />
+                  Google Ads →
+                </Link>
+                <Link href="/meta-ads" style={{ color: 'var(--text-secondary)' }}>
+                  <i className="bi bi-meta mr-1" aria-hidden="true" />
+                  Meta Ads →
+                </Link>
+              </div>
             </div>
             <div className="px-2 pb-2">
               <TopCampaignsTable campaigns={data.topCampaigns} currency={data.currency} />

@@ -10,10 +10,18 @@ import {
   getCampaignAggregatesForClient,
 } from '../db/repositories/metrics.repo';
 import { getDistinctFilters, hasAnyMetrics } from '../db/repositories/campaigns.repo';
+import {
+  getMetaCampaignAggregates,
+  getMetaCampaignAggregatesForClient,
+  getMetaSummaryRaw,
+  getMetaSummaryRawForCampaigns,
+  getMetaTrendRows,
+  getMetaTrendRowsForCampaigns,
+  hasAnyMetaMetrics,
+} from '../db/repositories/meta-metrics.repo';
 import { getGoogleAdsCurrency } from '../db/repositories/platformAccounts.repo';
 import { getLastSyncRun } from '../db/repositories/syncRuns.repo';
-import { deriveTotals } from '../db/utils';
-import { buildInsights } from './insights';
+import { deriveTotals, EMPTY_TOTALS } from '../db/utils';
 import { previousRange } from '../../lib/date';
 import type {
   CampaignDTO,
@@ -21,10 +29,12 @@ import type {
   CampaignListDTO,
   CampaignQuery,
   CampaignSortKey,
+  ChannelFilter,
   ConnectionStatusDTO,
   DashboardOverviewDTO,
   MetricsSummaryDTO,
   MetricsTotals,
+  TrendPoint,
   TrendsDTO,
 } from '../../lib/types';
 
@@ -106,44 +116,207 @@ export async function getGoogleAdsConnectionStatus(): Promise<ConnectionStatusDT
   };
 }
 
+/** Adds two MetricsTotals together (additive fields) and re-derives the ratios. */
+export function combineTotals(a: MetricsTotals, b: MetricsTotals): MetricsTotals {
+  return deriveTotals({
+    spend: a.spend + b.spend,
+    impressions: a.impressions + b.impressions,
+    clicks: a.clicks + b.clicks,
+    conversions: a.conversions + b.conversions,
+    conversions_value: a.conversionsValue + b.conversionsValue,
+  });
+}
+
+/** Merges two daily-trend series point-wise by date, recomputing CTR. */
+export function combineTrends(a: TrendPoint[], b: TrendPoint[]): TrendPoint[] {
+  const byDate = new Map<string, TrendPoint>();
+  for (const p of [...a, ...b]) {
+    const existing = byDate.get(p.date);
+    if (!existing) {
+      byDate.set(p.date, { ...p });
+    } else {
+      existing.spend += p.spend;
+      existing.impressions += p.impressions;
+      existing.clicks += p.clicks;
+      existing.conversions += p.conversions;
+      existing.ctr = existing.impressions > 0 ? (existing.clicks / existing.impressions) * 100 : 0;
+    }
+  }
+  return [...byDate.values()].sort((x, y) => x.date.localeCompare(y.date));
+}
+
+/**
+ * `campaignIds` undefined = unscoped/global (used only for the account-wide
+ * dashboard). `campaignIds` an array (even empty) = scoped — always queries by
+ * that exact id list, NEVER falls back to global data. This is what keeps one
+ * client's Meta numbers from ever leaking into another's.
+ */
+async function getMetaSummaryTotals(from: string, to: string, campaignIds?: number[]): Promise<MetricsTotals> {
+  const raw = await (campaignIds
+    ? getMetaSummaryRawForCampaigns(from, to, campaignIds)
+    : getMetaSummaryRaw(from, to)
+  ).catch(() => null);
+  return raw ? deriveTotals(raw) : EMPTY_TOTALS;
+}
+
+/** Meta trend rows mapped into the shared TrendPoint shape. */
+export function mapMetaTrendRows(rows: Awaited<ReturnType<typeof getMetaTrendRows>>): TrendPoint[] {
+  return rows.map((r) => {
+    const impressions = Number(r.impressions);
+    const clicks = Number(r.clicks);
+    return {
+      date: new Date(r.metric_date).toISOString().slice(0, 10),
+      spend: Number(r.spend),
+      impressions,
+      clicks,
+      conversions: Number(r.conversions),
+      ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
+    };
+  });
+}
+
+async function getMetaTrends(from: string, to: string, campaignIds?: number[]): Promise<TrendPoint[]> {
+  const rows = await (campaignIds
+    ? getMetaTrendRowsForCampaigns(from, to, campaignIds)
+    : getMetaTrendRows(from, to)
+  ).catch(() => []);
+  return mapMetaTrendRows(rows);
+}
+
+/** Meta campaign aggregate rows mapped into the shared CampaignDTO shape (channelType marks them). */
+export function mapMetaAggregatesToCampaignDTOs(
+  rows: Awaited<ReturnType<typeof getMetaCampaignAggregates>>,
+): CampaignDTO[] {
+  return rows.map((r) => {
+    const spend = Number(r.spend);
+    const impressions = Number(r.impressions);
+    const clicks = Number(r.clicks);
+    const conversions = Number(r.conversions);
+    return {
+      id: r.id,
+      googleCampaignId: r.meta_campaign_id,
+      googleCustomerId: '',
+      name: r.campaign_name ?? r.meta_campaign_id,
+      status: r.campaign_status,
+      channelType: 'META',
+      startDate: null,
+      endDate: null,
+      spend,
+      impressions,
+      clicks,
+      ctr: impressions > 0 ? (100 * clicks) / impressions : 0,
+      conversions,
+      conversionsValue: Number(r.conversions_value),
+      costPerConversion: conversions > 0 ? spend / conversions : null,
+      averageCpc: clicks > 0 ? spend / clicks : null,
+    };
+  });
+}
+
+/** Meta campaigns mapped into the shared CampaignDTO shape (channelType marks them). */
+async function getMetaCampaignsAsDTOs(from: string, to: string, campaignIds?: number[]): Promise<CampaignDTO[]> {
+  const rows = await (campaignIds
+    ? getMetaCampaignAggregatesForClient(from, to, campaignIds)
+    : getMetaCampaignAggregates(from, to)
+  ).catch(() => []);
+  return mapMetaAggregatesToCampaignDTOs(rows);
+}
+
 export async function getDashboardOverview(
   from: string,
   to: string,
-  /** When provided, scope all metrics to these campaign IDs only */
-  campaignIds?: number[],
+  /**
+   * When provided (even as an empty array), scope Google metrics to exactly
+   * these campaign IDs — used for a single client or an ad-hoc campaign
+   * selection. `undefined` means the unscoped, account-wide dashboard.
+   */
+  googleCampaignIds?: number[],
+  /** Which channel(s) to include. */
+  channel: ChannelFilter = 'all',
+  /**
+   * Meta counterpart of googleCampaignIds — scope Meta metrics to exactly
+   * these campaign IDs. Passing `undefined` here while googleCampaignIds IS
+   * scoped means "this caller has no Meta scoping concept for this call"
+   * (e.g. the ad-hoc Google-campaign multi-select), so Meta is left out
+   * entirely rather than ever falling back to unscoped/global Meta data.
+   */
+  metaCampaignIds?: number[],
 ): Promise<DashboardOverviewDTO> {
-  const scoped = campaignIds && campaignIds.length > 0;
+  const scopedGoogle = googleCampaignIds !== undefined;
   const prev = previousRange(from, to);
 
-  const [currency, summary, trends, aggregates, hasData, connection, prevSummary] =
-    await Promise.all([
-      resolveCurrency(),
-      scoped ? getSummaryForCampaigns(from, to, campaignIds!) : getSummary(from, to),
-      scoped ? getTrendsForCampaigns(from, to, campaignIds!) : getTrends(from, to),
-      scoped
-        ? getCampaignAggregatesForClient(from, to, campaignIds!)
-        : getCampaignAggregates({ from, to }),
-      hasAnyMetrics(),
-      getGoogleAdsConnectionStatus(),
-      scoped
-        ? getSummaryForCampaigns(prev.from, prev.to, campaignIds!)
-        : getSummary(prev.from, prev.to),
-    ]);
+  const effectiveChannel: ChannelFilter = channel;
+  const wantGoogle = effectiveChannel !== 'meta';
+  const wantMeta = effectiveChannel !== 'google';
+
+  const [
+    currency,
+    gSummary,
+    gTrends,
+    gAggregates,
+    gHasData,
+    connection,
+    gPrevSummary,
+    mSummary,
+    mTrends,
+    mAggregates,
+    mHasData,
+    mPrevSummary,
+  ] = await Promise.all([
+    resolveCurrency(),
+    wantGoogle
+      ? scopedGoogle
+        ? getSummaryForCampaigns(from, to, googleCampaignIds!)
+        : getSummary(from, to)
+      : Promise.resolve(EMPTY_TOTALS),
+    wantGoogle
+      ? scopedGoogle
+        ? getTrendsForCampaigns(from, to, googleCampaignIds!)
+        : getTrends(from, to)
+      : Promise.resolve([] as TrendPoint[]),
+    wantGoogle
+      ? scopedGoogle
+        ? getCampaignAggregatesForClient(from, to, googleCampaignIds!)
+        : getCampaignAggregates({ from, to })
+      : Promise.resolve([] as CampaignDTO[]),
+    wantGoogle ? hasAnyMetrics() : Promise.resolve(false),
+    getGoogleAdsConnectionStatus(),
+    wantGoogle
+      ? scopedGoogle
+        ? getSummaryForCampaigns(prev.from, prev.to, googleCampaignIds!)
+        : getSummary(prev.from, prev.to)
+      : Promise.resolve(EMPTY_TOTALS),
+    wantMeta ? getMetaSummaryTotals(from, to, metaCampaignIds) : Promise.resolve(EMPTY_TOTALS),
+    wantMeta ? getMetaTrends(from, to, metaCampaignIds) : Promise.resolve([] as TrendPoint[]),
+    wantMeta ? getMetaCampaignsAsDTOs(from, to, metaCampaignIds) : Promise.resolve([] as CampaignDTO[]),
+    wantMeta
+      ? metaCampaignIds
+        ? Promise.resolve(metaCampaignIds.length > 0)
+        : hasAnyMetaMetrics().catch(() => false)
+      : Promise.resolve(false),
+    wantMeta ? getMetaSummaryTotals(prev.from, prev.to, metaCampaignIds) : Promise.resolve(EMPTY_TOTALS),
+  ]);
+
+  const summary = wantGoogle && wantMeta ? combineTotals(gSummary, mSummary) : wantMeta ? mSummary : gSummary;
+  const prevSummary =
+    wantGoogle && wantMeta ? combineTotals(gPrevSummary, mPrevSummary) : wantMeta ? mPrevSummary : gPrevSummary;
+  const trends = wantGoogle && wantMeta ? combineTrends(gTrends, mTrends) : wantMeta ? mTrends : gTrends;
+  const aggregates = [...gAggregates, ...mAggregates];
 
   const topCampaigns = sortCampaigns(aggregates, 'spend', 'desc').slice(0, 5);
-  const insights = buildInsights(aggregates, summary, currency);
 
   return {
     dateRange: { from, to },
     currency,
+    channel: effectiveChannel,
     summary,
     previous: prevSummary,
     trends,
     topCampaigns,
-    insights,
     lastSyncedAt: connection.lastSuccessAt,
-    hasData,
+    hasData: gHasData || mHasData,
     googleAds: connection,
+    channels: effectiveChannel === 'all' ? { google: gSummary, meta: mSummary } : null,
   };
 }
 

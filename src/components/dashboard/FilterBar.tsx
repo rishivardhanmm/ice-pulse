@@ -13,6 +13,13 @@ interface Campaign {
   id: number;
   campaignName: string | null;
   clientId: number | null;
+  /** Google and Meta campaign ids are separate sequences and CAN collide numerically. */
+  channel: 'google' | 'meta';
+}
+
+/** Composite key so a Google id and a Meta id that happen to be numerically equal never collide in selection state. */
+function campaignKey(c: Campaign): string {
+  return `${c.channel}:${c.id}`;
 }
 
 interface FilterBarProps {
@@ -29,6 +36,14 @@ export function FilterBar({ showClientFilter }: FilterBarProps) {
   const activeCampaignIds = sp.get('campaignIds')
     ? sp.get('campaignIds')!.split(',').map(Number).filter(Number.isFinite)
     : [];
+  const activeMetaCampaignIds = sp.get('metaCampaignIds')
+    ? sp.get('metaCampaignIds')!.split(',').map(Number).filter(Number.isFinite)
+    : [];
+  const activeKeys = new Set([
+    ...activeCampaignIds.map((id) => `google:${id}`),
+    ...activeMetaCampaignIds.map((id) => `meta:${id}`),
+  ]);
+  const activeCampaignCount = activeCampaignIds.length + activeMetaCampaignIds.length;
 
   const [clients, setClients] = useState<Client[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -36,7 +51,7 @@ export function FilterBar({ showClientFilter }: FilterBarProps) {
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const hasActiveFilter = activeClientId !== null || activeCampaignIds.length > 0;
+  const hasActiveFilter = activeClientId !== null || activeCampaignCount > 0;
 
   const loadClients = useCallback(async () => {
     if (!showClientFilter) return;
@@ -75,22 +90,31 @@ export function FilterBar({ showClientFilter }: FilterBarProps) {
   }
 
   function selectClient(clientId: number | null) {
-    router.push(buildUrl({ clientId: clientId ? String(clientId) : undefined, campaignIds: undefined }));
+    router.push(
+      buildUrl({
+        clientId: clientId ? String(clientId) : undefined,
+        campaignIds: undefined,
+        metaCampaignIds: undefined,
+      }),
+    );
     setOpen(false);
   }
 
-  function toggleCampaign(id: number) {
-    const next = activeCampaignIds.includes(id)
-      ? activeCampaignIds.filter((x) => x !== id)
-      : [...activeCampaignIds, id];
-    router.push(buildUrl({
-      campaignIds: next.length ? next.join(',') : undefined,
-      clientId: undefined,
-    }));
+  function toggleCampaign(c: Campaign) {
+    const isMeta = c.channel === 'meta';
+    const currentIds = isMeta ? activeMetaCampaignIds : activeCampaignIds;
+    const next = currentIds.includes(c.id) ? currentIds.filter((x) => x !== c.id) : [...currentIds, c.id];
+    router.push(
+      buildUrl(
+        isMeta
+          ? { metaCampaignIds: next.length ? next.join(',') : undefined, clientId: undefined }
+          : { campaignIds: next.length ? next.join(',') : undefined, clientId: undefined },
+      ),
+    );
   }
 
   function clearAll() {
-    router.push(buildUrl({ clientId: undefined, campaignIds: undefined }));
+    router.push(buildUrl({ clientId: undefined, campaignIds: undefined, metaCampaignIds: undefined }));
     setOpen(false);
   }
 
@@ -118,7 +142,7 @@ export function FilterBar({ showClientFilter }: FilterBarProps) {
               className="rounded-full px-1.5 text-[9px] font-bold"
               style={{ background: 'var(--gold)', color: '#14082a' }}
             >
-              {activeCampaignIds.length || 1}
+              {activeCampaignCount || 1}
             </span>
           )}
         </button>
@@ -134,13 +158,13 @@ export function FilterBar({ showClientFilter }: FilterBarProps) {
             <button onClick={clearAll} className="ml-0.5 opacity-70 hover:opacity-100">×</button>
           </span>
         )}
-        {activeCampaignIds.length > 0 && (
+        {activeCampaignCount > 0 && (
           <span
             className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold"
             style={{ background: 'rgba(255,213,0,0.12)', color: 'var(--gold)' }}
           >
             <i className="bi bi-megaphone text-[10px]" />
-            {activeCampaignIds.length} campaign{activeCampaignIds.length !== 1 ? 's' : ''}
+            {activeCampaignCount} campaign{activeCampaignCount !== 1 ? 's' : ''}
             <button onClick={clearAll} className="ml-0.5 opacity-70 hover:opacity-100">×</button>
           </span>
         )}
@@ -202,15 +226,21 @@ export function FilterBar({ showClientFilter }: FilterBarProps) {
               ) : (
                 <div className="max-h-48 space-y-1 overflow-y-auto">
                   {visibleCampaigns.map((c) => {
-                    const checked = activeCampaignIds.includes(c.id);
+                    const key = campaignKey(c);
+                    const checked = activeKeys.has(key);
                     return (
-                      <label key={c.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors ice-nav-item">
+                      <label key={key} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors ice-nav-item">
                         <input
                           type="checkbox"
                           checked={checked}
-                          onChange={() => toggleCampaign(c.id)}
+                          onChange={() => toggleCampaign(c)}
                           className="rounded"
                           style={{ accentColor: 'var(--gold)' }}
+                        />
+                        <i
+                          className={`bi ${c.channel === 'meta' ? 'bi-meta' : 'bi-google'} shrink-0`}
+                          style={{ color: c.channel === 'meta' ? '#1877F2' : '#4285F4' }}
+                          title={c.channel === 'meta' ? 'Meta Ads' : 'Google Ads'}
                         />
                         <span className="flex-1 truncate" style={{ color: 'var(--text-primary)' }}>
                           {c.campaignName ?? `Campaign #${c.id}`}
@@ -222,7 +252,7 @@ export function FilterBar({ showClientFilter }: FilterBarProps) {
               )}
             </div>
 
-            {(activeCampaignIds.length > 0 || activeClientId) && (
+            {(activeCampaignCount > 0 || activeClientId) && (
               <button
                 onClick={clearAll}
                 className="mt-3 w-full rounded-xl border py-1.5 text-xs font-semibold"

@@ -14,6 +14,18 @@ function mapClient(r: Record<string, unknown>): ClientDTO {
   };
 }
 
+export async function getClientById(id: number): Promise<ClientDTO | null> {
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .input('id', sql.Int, id)
+    .query(
+      `SELECT id, name, slug, description, status, created_at, updated_at
+       FROM dbo.clients WHERE id = @id`,
+    );
+  return result.recordset[0] ? mapClient(result.recordset[0]) : null;
+}
+
 export async function listClients(): Promise<ClientDTO[]> {
   const pool = await getPool();
   const result = await pool.request().query(

@@ -1,7 +1,10 @@
 import { googleAdsConnector } from '../../integrations/google-ads/connector';
 import { metaAdsConnector } from '../../integrations/meta-ads/connector';
-import { isGoogleAdsConfigured, isMetaAdsConfigured } from '../config/env';
+import { isAiConfigured, isEmailConfigured, isGoogleAdsConfigured, isMetaAdsConfigured } from '../config/env';
 import { listSchedules, markRun } from '../db/repositories/syncSchedules.repo';
+import { runAnomalyWatch } from './anomaly.service';
+import { trySendWeeklyDigest } from './digest.service';
+import { tryRunDailyPostIdeas } from './post-ideas.service';
 import { logger, toErrorMessage } from '../logger';
 import type { DataConnector } from '../../integrations/connector';
 
@@ -16,6 +19,27 @@ interface SourceEntry {
 const SOURCE_REGISTRY: Record<string, SourceEntry> = {
   google_ads: { connector: googleAdsConnector, isConfigured: isGoogleAdsConfigured },
   meta_ads: { connector: metaAdsConnector, isConfigured: isMetaAdsConfigured },
+};
+
+interface AiJobEntry {
+  run: (lookbackDays: number) => Promise<unknown>;
+  isConfigured: () => boolean;
+}
+
+/** Scheduled AI jobs — same sync_schedules mechanism, but no DataConnector. */
+const AI_JOB_REGISTRY: Record<string, AiJobEntry> = {
+  ai_anomaly_watch: {
+    run: (lookbackDays) => runAnomalyWatch(lookbackDays),
+    isConfigured: isAiConfigured,
+  },
+  weekly_digest: {
+    run: (lookbackDays) => trySendWeeklyDigest(lookbackDays),
+    isConfigured: () => isAiConfigured() && isEmailConfigured(),
+  },
+  daily_post_ideas: {
+    run: () => tryRunDailyPostIdeas(),
+    isConfigured: isAiConfigured,
+  },
 };
 
 function todayUtc(): string {
@@ -40,24 +64,36 @@ export async function runDueSyncs(): Promise<void> {
 
   for (const schedule of schedules) {
     const entry = SOURCE_REGISTRY[schedule.source];
-    if (!entry) continue;
+    const aiJob = AI_JOB_REGISTRY[schedule.source];
+    if (!entry && !aiJob) continue;
     if (!schedule.enabled) continue;
-    if (!entry.isConfigured()) continue;
+    if (!(entry ?? aiJob)!.isConfigured()) continue;
 
     const dueAt = schedule.lastRunAt
       ? new Date(schedule.lastRunAt).getTime() + schedule.intervalMinutes * 60_000
       : 0;
     if (Date.now() < dueAt) continue;
 
-    const to = todayUtc();
-    const from = shiftDays(to, -schedule.lookbackDays);
+    if (entry) {
+      const to = todayUtc();
+      const from = shiftDays(to, -schedule.lookbackDays);
+      logger.info('Scheduler: running due sync', { source: schedule.source, from, to });
+      try {
+        const result = await entry.connector.sync({ from, to, triggeredBy: 'schedule' });
+        await markRun(schedule.source, result.status === 'success' ? 'success' : 'failed');
+      } catch (err) {
+        logger.error('Scheduler: sync threw', { source: schedule.source, error: toErrorMessage(err) });
+        await markRun(schedule.source, 'failed').catch(() => undefined);
+      }
+      continue;
+    }
 
-    logger.info('Scheduler: running due sync', { source: schedule.source, from, to });
+    logger.info('Scheduler: running due AI job', { source: schedule.source, lookbackDays: schedule.lookbackDays });
     try {
-      const result = await entry.connector.sync({ from, to, triggeredBy: 'schedule' });
-      await markRun(schedule.source, result.status === 'success' ? 'success' : 'failed');
+      await aiJob!.run(schedule.lookbackDays);
+      await markRun(schedule.source, 'success');
     } catch (err) {
-      logger.error('Scheduler: sync threw', { source: schedule.source, error: toErrorMessage(err) });
+      logger.error('Scheduler: AI job threw', { source: schedule.source, error: toErrorMessage(err) });
       await markRun(schedule.source, 'failed').catch(() => undefined);
     }
   }
