@@ -1,8 +1,13 @@
-import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
+import { CanvaSettingsView } from '@/components/canva/CanvaSettingsView';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Roadmap — ICE Pulse' };
+export const metadata = { title: 'Canva Integration — ICE Pulse' };
 
 export default function CanvaPage() {
-  redirect('/roadmap');
+  return (
+    <Suspense fallback={null}>
+      <CanvaSettingsView />
+    </Suspense>
+  );
 }
