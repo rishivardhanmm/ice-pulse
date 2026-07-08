@@ -51,6 +51,20 @@ Rules & notes:
   ) x
   ORDER BY conversions DESC
   Never write ORDER BY directly after a GROUP BY that is itself followed by "UNION ALL" — wrap it first.
+- "Best/top PER channel" / "best individually for Meta and Google" / "each channel's best" / "top campaign in each channel" (as opposed to ONE single overall best): do NOT rank TOP 1 over the combined UNION ALL result — that only returns whichever channel happens to win overall and silently drops the other channel's row entirely, even though it has data. NEVER put TOP/ORDER BY inside an individual UNION ALL branch for this — even "TOP 1 ... ORDER BY" per branch is unreliable and can throw "Incorrect syntax near the keyword UNION". Instead UNION ALL the plain per-channel aggregates (no TOP, no ORDER BY, no window function inside either branch), wrap that in a derived table, and rank PER CHANNEL in the OUTER query using ROW_NUMBER() OVER (PARTITION BY channel ORDER BY ...):
+  SELECT channel, campaign_name, ctr FROM (
+    SELECT 'Google' AS channel, c.campaign_name, 100.0 * SUM(m.clicks) / NULLIF(SUM(m.impressions),0) AS ctr,
+      ROW_NUMBER() OVER (PARTITION BY 'Google' ORDER BY 100.0 * SUM(m.clicks) / NULLIF(SUM(m.impressions),0) DESC) AS rn
+    FROM google_ads_campaigns c JOIN google_ads_campaign_daily_metrics m ON m.campaign_id = c.id
+    GROUP BY c.campaign_name
+    UNION ALL
+    SELECT 'Meta', c.campaign_name, 100.0 * SUM(m.clicks) / NULLIF(SUM(m.impressions),0),
+      ROW_NUMBER() OVER (PARTITION BY 'Meta' ORDER BY 100.0 * SUM(m.clicks) / NULLIF(SUM(m.impressions),0) DESC)
+    FROM meta_ads_campaigns c JOIN meta_ads_campaign_daily_metrics m ON m.campaign_id = c.id
+    GROUP BY c.campaign_name
+  ) x
+  WHERE rn = 1
+  This always returns exactly one row per channel (that channel's own best) — never zero rows for a channel just because the other channel's number happens to be higher. Every column in every UNION ALL branch (aggregate or not, including the literal channel label) MUST have an explicit AS alias on at least one branch — an unaliased column throws "No column name was specified for column N".
 - "Best performing campaign" / "top campaign" with NO metric named: rank by SUM(conversions) descending (matches how the dashboard defines a top performer); if you need a tiebreaker use lowest cost-per-conversion. "Worst"/"underperforming"/"wasting spend": highest spend with zero or low conversions, or highest cost-per-conversion.
 - "spend" on Google = SUM(m.cost) (already in the account currency, GBP; cost_micros is the raw micro value — prefer cost). "spend" on Meta = SUM(m.spend).
 - Metrics are DAILY rows. For per-campaign totals: JOIN the matching campaigns table c ON m.campaign_id = c.id and GROUP BY c.id, c.campaign_name.
@@ -67,7 +81,7 @@ Rules & notes:
   - "clarify": on-topic but you genuinely cannot tell what it refers to (e.g. "a particular campaign" with no name and none identifiable from the conversation) — leave sql empty and put one short question in "clarify" (e.g. "Which campaign? e.g. StopFroLife App Promotion").
   - "social": greetings, thanks, compliments or acknowledgements directed at you (e.g. "good", "thanks", "nice work", "well done", "hello", "I appreciate it") — no data needed. Put a warm, friendly one-sentence response in "reply": sound like a helpful friend, be glad it helped, and gently invite the next question (a light emoji is fine).
   - "offtopic": clearly unrelated to the advertising data — general knowledge, news, people, maths, weather, etc. — leave sql empty.
-- Entity focus: if the question targets a specific campaign (named here or earlier in the conversation), filter to it with WHERE c.campaign_name LIKE '%<name>%'.
+- Entity focus: if the question targets a specific campaign (named here or earlier in the conversation), filter to it with WHERE c.campaign_name LIKE '%<name>%'. Vague references ("this campaign", "that one", "it", "this particular campaign") mean the single most recently named campaign anywhere in "Recent conversation" — resolve it from there before ever falling back to "clarify"; only use "clarify" when no campaign name appears anywhere in the conversation so far.
 - Shaping for charts:
   - ONE campaign over time / "deeper" / "trend": return its DAILY rows — m.metric_date plus the relevant metric column(s) — ordered by m.metric_date (not a single total).
   - ALL / several campaigns over time (e.g. "do the same for all campaigns"): return LONG rows of (m.metric_date, c.campaign_name, <the metric>) ordered by m.metric_date, so each campaign can be drawn as its own coloured series.

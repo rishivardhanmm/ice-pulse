@@ -120,7 +120,7 @@ const envSchema = z.object({
   // instead of its real recipient. Unset before real users rely on notifications.
   EMAIL_OVERRIDE_TO: optionalString,
 
-  // AI (OpenAI gpt-4o-mini by default; provider-agnostic)
+  // AI (OpenAI gpt-4.1-mini by default; provider-agnostic)
   AI_ENABLED: boolish(false),
   AI_PROVIDER: z.preprocess(
     (v) => (v === undefined || String(v).trim() === '' ? 'openai' : String(v).trim().toLowerCase()),
@@ -128,7 +128,7 @@ const envSchema = z.object({
   ),
   OPENAI_API_KEY: optionalString,
   OPENAI_MODEL: z.preprocess(
-    (v) => (v === undefined || String(v).trim() === '' ? 'gpt-4o-mini' : String(v).trim()),
+    (v) => (v === undefined || String(v).trim() === '' ? 'gpt-4.1-mini' : String(v).trim()),
     z.string(),
   ),
   // Base URL for the OpenAI-compatible API. Default: OpenAI. For Azure AI
@@ -140,8 +140,8 @@ const envSchema = z.object({
         : String(v).trim().replace(/\/+$/, ''),
     z.string(),
   ),
-  AI_INPUT_PRICE_PER_1M: numish(0.15),
-  AI_OUTPUT_PRICE_PER_1M: numish(0.6),
+  AI_INPUT_PRICE_PER_1M: numish(0.4),
+  AI_OUTPUT_PRICE_PER_1M: numish(1.6),
   AI_MAX_OUTPUT_TOKENS: portish(500),
   AI_SQL_MAX_ATTEMPTS: portish(3),
 

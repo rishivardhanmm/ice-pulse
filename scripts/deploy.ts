@@ -16,6 +16,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import * as dotenv from 'dotenv';
+import * as readline from 'node:readline/promises';
+import { stdin, stdout } from 'node:process';
 import { Client as FtpClient } from 'basic-ftp';
 
 dotenv.config({ path: path.join(process.cwd(), '.env.deploy') });
@@ -39,6 +41,90 @@ const CONFIG = {
 
 const ROOT = path.join(__dirname, '..');
 const RECONNECT_EVERY_FILES = 75;
+
+// Integration credentials that must exist in BOTH .env.local and
+// .env.production.local for the feature to work in production. Deliberately
+// excludes infrastructure config that's SUPPOSED to differ between the two
+// (MSSQL_*, APP_URL, *_REDIRECT_URI, EMAIL_OVERRIDE_TO, *_TOKEN_ENCRYPTION_KEY —
+// the last two should be freshly generated for production, never copied from
+// dev, per docs/deploy-plesk.md).
+const INTEGRATION_ENV_GROUPS: Record<string, string[]> = {
+  'Google Ads': [
+    'GOOGLE_ADS_AUTH', 'GOOGLE_ADS_DEVELOPER_TOKEN', 'GOOGLE_ADS_CUSTOMER_ID', 'GOOGLE_ADS_LOGIN_CUSTOMER_ID',
+    'GOOGLE_ADS_CLIENT_ID', 'GOOGLE_ADS_CLIENT_SECRET', 'GOOGLE_ADS_REFRESH_TOKEN',
+    'GOOGLE_ADS_SERVICE_ACCOUNT_KEY_BASE64', 'GOOGLE_ADS_SERVICE_ACCOUNT_KEY_FILE', 'GOOGLE_ADS_IMPERSONATION_EMAIL',
+  ],
+  'Meta Ads': ['META_ACCESS_TOKEN', 'META_AD_ACCOUNT_ID', 'META_APP_ID', 'META_APP_SECRET'],
+  'AI (OpenAI / Azure)': [
+    'AI_ENABLED', 'OPENAI_API_KEY', 'OPENAI_MODEL', 'OPENAI_BASE_URL',
+    'AI_INPUT_PRICE_PER_1M', 'AI_OUTPUT_PRICE_PER_1M',
+  ],
+  'Power BI': ['POWERBI_TENANT_ID', 'POWERBI_CLIENT_ID', 'POWERBI_CLIENT_SECRET'],
+  'Canva': ['CANVA_CLIENT_ID', 'CANVA_CLIENT_SECRET'],
+  'Zoho Social': ['ZOHO_SOCIAL_CLIENT_ID', 'ZOHO_SOCIAL_CLIENT_SECRET', 'ZOHO_SOCIAL_ORG_ID'],
+  'GNews': ['GNEWS_API_KEY'],
+  'SendGrid': ['SENDGRID_API_KEY', 'SENDGRID_FROM_EMAIL', 'SENDGRID_FROM_NAME'],
+};
+
+function parseEnvFile(filePath: string): Record<string, string> {
+  if (!fs.existsSync(filePath)) return {};
+  return dotenv.parse(fs.readFileSync(filePath));
+}
+
+/**
+ * Compares .env.local against .env.production.local for every integration
+ * that's actually turned on locally, and stops the deploy to let the
+ * presenter fix (or explicitly accept) any gap — this is exactly the bug
+ * class that's bitten this project twice already (AI/GNews, then Meta Ads):
+ * something works locally and is silently unconfigured in production because
+ * the two env files are separate on purpose (see docs/deploy-plesk.md) and
+ * nothing previously cross-checked them.
+ */
+async function checkEnvParity(): Promise<void> {
+  const local = parseEnvFile(path.join(ROOT, '.env.local'));
+  const prodPath = path.join(ROOT, '.env.production.local');
+  const prod = parseEnvFile(prodPath);
+
+  const gaps: Array<{ group: string; keys: string[] }> = [];
+  for (const [group, keys] of Object.entries(INTEGRATION_ENV_GROUPS)) {
+    const setLocally = keys.filter((k) => (local[k] ?? '').trim() !== '');
+    if (setLocally.length === 0) continue; // this integration isn't even on locally — nothing to check
+    const missingInProd = setLocally.filter((k) => (prod[k] ?? '').trim() === '');
+    if (missingInProd.length > 0) gaps.push({ group, keys: missingInProd });
+  }
+
+  if (gaps.length === 0) {
+    ok('Local integrations all have matching production config');
+    return;
+  }
+
+  step('Checking .env.local against .env.production.local...');
+  console.log('\n   The following are configured locally but missing from .env.production.local:');
+  console.log('   (Note: if any of these are instead set directly in Plesk\'s own environment-variable');
+  console.log('   panel, that\'s also fine — this check only looks at the local file.)\n');
+  for (const gap of gaps) {
+    console.log(`   ${gap.group}: ${gap.keys.join(', ')}`);
+  }
+
+  const rl = readline.createInterface({ input: stdin, output: stdout });
+  const answer = await rl.question(
+    '\n   Copy these values from .env.local into .env.production.local now? (y/N): ',
+  );
+  rl.close();
+
+  if (answer.trim().toLowerCase() !== 'y') {
+    console.log('\nX  Deploy cancelled — fix .env.production.local (or Plesk\'s panel) and re-run.\n');
+    process.exit(1);
+  }
+
+  const lines = fs.existsSync(prodPath) ? fs.readFileSync(prodPath, 'utf8').replace(/\n+$/, '') : '';
+  const additions = gaps
+    .map((gap) => `\n# ── ${gap.group} (copied from .env.local by npm run deploy) ──\n` +
+      gap.keys.map((k) => `${k}=${local[k]}`).join('\n'))
+    .join('\n');
+  fs.writeFileSync(prodPath, `${lines}\n${additions}\n`);
+  ok(`Copied ${gaps.reduce((n, g) => n + g.keys.length, 0)} value(s) into .env.production.local`);
+}
 
 const INCLUDE_DIRS = ['.next', 'public', 'database', 'scripts'];
 const INCLUDE_FILES = [
@@ -184,6 +270,7 @@ async function doUpload(): Promise<void> {
 }
 
 async function main() {
+  await checkEnvParity();
   doBuild();
   await doUpload();
 

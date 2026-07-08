@@ -23,7 +23,7 @@ function sanitizeHistory(raw: unknown): AiMessage[] {
       }
     }
   }
-  return out.slice(-6);
+  return out.slice(-24);
 }
 
 export async function POST(req: Request) {
